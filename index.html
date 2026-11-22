@@ -323,7 +323,7 @@ header{grid-column:1/-1;grid-row:1;display:flex;align-items:center;gap:var(--s-3
           <div class="row"><button class="btn hold" data-axis="reach" data-s="-1" type="button">◀ 접기</button><button class="btn hold" data-axis="reach" data-s="1" type="button">펴기 ▶</button><button class="btn btn-primary" id="zeroReach" type="button">여기가 600 mm</button></div></div>
         <div class="step" id="st-canopy"><h3><i>4</i>캐노피 기준</h3><p>캐노피를 팔과 나란한 정면(0°)에 맞춘 뒤 기준으로 선언합니다.</p><div class="v" id="wCanopy">—</div>
           <div class="row"><button class="btn hold" data-axis="canopy" data-s="-1" type="button">⟲</button><button class="btn hold" data-axis="canopy" data-s="1" type="button">⟳</button><button class="btn btn-primary" id="zeroCanopy" type="button">여기가 0°</button></div></div>
-        <div class="step" id="st-lift"><h3><i>5</i>접기 기준</h3><p>기준 자세(0°)로 맞춘 뒤 선언합니다. 범위 미검증 축이라 리밋 스위치만 보호합니다.</p><div class="v" id="wLift">—</div>
+        <div class="step" id="st-lift"><h3><i>5</i>접기 기준</h3><p>기준 자세(너트 0 mm)로 맞춘 뒤 선언합니다. 범위 미검증 축이라 리밋 스위치만 보호합니다.</p><div class="v" id="wLift">—</div>
           <div class="row"><button class="btn hold" data-axis="lift" data-s="-1" type="button">▼</button><button class="btn hold" data-axis="lift" data-s="1" type="button">▲</button><button class="btn btn-primary" id="zeroLift" type="button">여기가 0°</button></div></div>
       </div>
     </div>
@@ -370,10 +370,10 @@ header{grid-column:1/-1;grid-row:1;display:flex;align-items:center;gap:var(--s-3
 const CFG = {
   AXES: ['yaw', 'reach', 'canopy', 'lift'],
   A: {
-    yaw:    { label: '요',     unit: '°',  min: -89,  max: 46,   vmax: 5,  jog: 2,  home: -95, spu: 9600 / 360, verified: true,  hasHome: true  },
-    reach:  { label: '뻗기',   unit: 'mm', min: 600,  max: 1840, vmax: 40, jog: 10, home: 600, spu: 9600 / 40,  verified: true,  hasHome: false },
-    canopy: { label: '캐노피', unit: '°',  min: -180, max: 180,  vmax: 6,  jog: 3,  home: 0,   spu: 9600 / 360, verified: true,  hasHome: false },
-    lift:   { label: '접기',   unit: '°',  min: 0,    max: 0,    vmax: 90, jog: 30, home: 0,   spu: 9600 / 360, verified: false, hasHome: false },
+    yaw:    { label: '요',     unit: '°',  min: -89,  max: 46,   vmax: 5,  jog: 2,  home: -95, spu: 1600 * 200 / 360, verified: true,  hasHome: true  },
+    reach:  { label: '뻗기',   unit: 'mm', min: 600,  max: 1840, vmax: 63, jog: 10, home: 600, spu: 1600 / 40,  verified: true,  hasHome: false },
+    canopy: { label: '캐노피', unit: '°',  min: -180, max: 180,  vmax: 6,  jog: 3,  home: 0,   spu: 1600 * 22.5 / 360, verified: true,  hasHome: false },
+    lift:   { label: '접기',   unit: 'mm', min: 0,    max: 0,    vmax: 3,  jog: 3,  home: 0,   spu: 1600 * 5 / 2, verified: false, hasHome: false },
   },
   LIFT_JOGV_SCALE: 0.25, JOGV_WINDOW_S: 0.5, JOGV_EXPIRY_MS: 300, DEADZONE: 0.1, LINK_SILENCE_MS: 1000, LINE_MAX: 95,
   CANOPY_YAW_SIGN: 1, STATUS_MS: 100, TICK_MS: 100, HB_MS: 200, PAD_R: 60, DIAL_FULL_DPS: 60, CHUNK: 20,
@@ -1071,7 +1071,7 @@ const Panels = {
       else if (yp) { btn('◀ 요 −1° 빼내기', 'recover yaw -1'); note = '+ 리밋에서 − 방향으로 1°씩, 조그 속도의 1/4로 움직입니다. 풀릴 때까지 반복하세요.'; }
       else { btn('요 +1° 빼내기 ▶', 'recover yaw 1'); note = '− 리밋에서 + 방향으로 1°씩, 조그 속도의 1/4로 움직입니다. 풀릴 때까지 반복하세요.'; }
     } else if (ll && only(['LIM_LIFT'])) {
-      btn('▲ 접기 +2°', 'recover lift 2'); btn('▼ 접기 −2°', 'recover lift -2');
+      btn('▲ 접기 +1 mm', 'recover lift 1'); btn('▼ 접기 −1 mm', 'recover lift -1');
       note = '움직이던 방향의 반대만 펌웨어가 허용합니다. 멈춘 상태에서 걸렸으면 거부되니 끝을 눈으로 확인하고 손으로 푸세요.';
     } else note = st.faults.includes('CONFIG') ? '설정 오류는 reset으로 풀리지 않습니다.' : '리밋 고장이 아니라 복구 조그가 없습니다. 원인을 확인한 뒤 해제(reset)하세요.';
     $('recoverNote').textContent = st.recoverNote || note;
