@@ -271,6 +271,7 @@ header{grid-column:1/-1;grid-row:1;display:flex;align-items:center;gap:var(--s-2
       <g id="mapStatic"></g>
       <g id="mapDyn"></g>
       <g id="mapTable"></g>
+      <g id="mapLabels"></g>
       <g id="mapKnob" style="display:none"></g>
     </svg>
     <div class="mapReadout num" id="mapReadout" aria-hidden="true">
@@ -1117,8 +1118,10 @@ const MapR = {
     const [lx, ly] = this.P(rO + 60, min); lab('−89°', lx, ly + 4, 'end');
     const [rx, ry] = this.P(rO + 60, max); lab('+46°', rx, ry);
     lab('0°', tx, ty - 6, 'middle');
-    const [ix, iy] = this.P(rI, (min + max) / 2 - 30); lab('600 mm', ix - 4, iy - 4, 'end');
-    const [ox, oy] = this.P(rO, (min + max) / 2 - 40); lab('1840 mm', ox - 6, oy, 'end');
+    const top = $('mapLabels'); top.innerHTML = '';
+    const ringLab = (t, x, y) => { const e = lab(t, x, y, 'end'); Object.assign(e.style, { paintOrder: 'stroke', stroke: 'var(--c-bg)', strokeWidth: '3px', strokeLinejoin: 'round' }); top.appendChild(e); };
+    const [ix, iy] = this.P(rI, (min + max) / 2 - 30); ringLab('600 mm', ix - 4, iy - 4);
+    const [ox, oy] = this.P(rO, (min + max) / 2 - 40); ringLab('1840 mm', ox - 6, oy);
     svg('circle', { id: 'mapPole', cx: this.px, cy: this.py, r: this.sw * 1.8, fill: 'var(--c-steel-2)', stroke: 'var(--c-steel-3)', 'stroke-width': 2 }, root);
     root.appendChild(lab('기둥', this.px + this.sw * 2.8, this.py + this.fs * 1.6));
   },
