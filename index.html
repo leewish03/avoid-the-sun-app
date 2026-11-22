@@ -31,7 +31,7 @@
   --s-1:.25rem; --s-2:.5rem; --s-3:.75rem; --s-4:1rem; --s-5:1.5rem;
   --t-xs:.625rem; --t-sm:.6875rem; --t-md:.75rem; --t-base:.8125rem; --t-lg:1rem; --t-xl:1.25rem; --t-2xl:1.625rem;
   --r-sm:.5rem; --r-md:.625rem; --r-lg:1rem; --r-xl:1.125rem; --r-pill:999px;
-  --w-side:12.25rem; --w-stop:8rem; --h-head:2.375rem; --h-hint:2.5rem;
+  --w-side:12.25rem; --w-stop:8rem; --h-head:2.375rem; --h-hint:2.5rem; --o-dim:.45; --o-dim-pad:.6;
   --font:'Pretendard Variable','Pretendard','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR','Noto Sans CJK KR',system-ui,sans-serif;
   --mono:'Cascadia Code','JetBrains Mono','D2Coding',Consolas,ui-monospace,monospace;
   --dur:.18s; --ease:cubic-bezier(.2,.8,.2,1);
@@ -39,6 +39,8 @@
 /* 기준 844x390에서 1rem = 16px. 화면이 커지면 비례 확대(최대 1.5배), 작아지면 축소(최소 11px). */
 html{font-size:clamp(11px,min(1.8957vw,4.1026vh),24px)}
 @media (orientation:portrait){html{font-size:clamp(11px,min(1.8957vh,4.1026vw),24px)}}
+/* 세로 화면에 안내 띠(2.5rem)가 있는 동안은 띠를 뺀 길이가 기준 폭 52.75rem이 되게 한다: 100vh = 55.25rem */
+@media (orientation:portrait){html:has(body.hint){font-size:clamp(11px,min(1.81vh,4.1026vw),24px)}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--c-bg);color:var(--c-text);font-family:var(--font);overflow:hidden;overscroll-behavior:none}
 body{position:fixed;inset:0;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -63,7 +65,7 @@ svg text{font-family:var(--font)}
 }
 
 /* ---------- 헤더 ---------- */
-header{grid-column:1/-1;grid-row:1;display:flex;align-items:center;gap:var(--s-3);padding:0 var(--s-1);min-width:0}
+header{grid-column:1/-1;grid-row:1;display:flex;align-items:center;gap:var(--s-2);padding:0 var(--s-1);min-width:0}
 .state{display:inline-flex;align-items:center;gap:.4em;border-radius:var(--r-pill);padding:.2em .85em;font-weight:700;font-size:var(--t-base);border:1px solid var(--c-line-2);background:var(--c-panel);color:var(--c-mute);white-space:nowrap;transition:background var(--dur),color var(--dur),border-color var(--dur)}
 .state::before{content:'';width:.55em;height:.55em;border-radius:50%;background:currentColor}
 .state[data-s=READY]{background:var(--a-ok-15);color:var(--c-ok-2);border-color:var(--a-ok-50)}
@@ -78,21 +80,36 @@ header{grid-column:1/-1;grid-row:1;display:flex;align-items:center;gap:var(--s-3
 .conn[data-c=stale]{color:var(--c-amber)}.conn[data-c=stale] i{background:var(--c-amber)}
 .conn[data-c=connecting] i{background:var(--c-sky);animation:blink .8s infinite}
 .conn:not(:disabled):hover{background:var(--c-panel)}
-.chips{margin-left:auto;display:flex;gap:.4rem;min-width:0;overflow:hidden}
-.chip{background:var(--c-panel);border:1px solid var(--c-line);border-radius:var(--r-sm);padding:.2em .6em;font-size:var(--t-sm);color:var(--c-mute);white-space:nowrap;transition:border-color var(--dur)}
+.chips{margin-left:auto;display:flex;gap:.3rem;min-width:0;overflow:hidden}
+.chip{background:var(--c-panel);border:1px solid var(--c-line);border-radius:var(--r-sm);padding:.2em .5em;font-size:var(--t-sm);color:var(--c-mute);white-space:nowrap;transition:border-color var(--dur)}
 .chip b{color:var(--c-text);font-size:var(--t-base);margin-left:.3em}
 .chip.run{border-color:var(--a-sky-35)}.chip.run b{color:var(--c-sky-3)}
 .chip.unh b{color:var(--c-mute)}
 .gear{color:var(--c-mute);font-size:var(--t-md);border:1px solid var(--c-line);border-radius:var(--r-sm);padding:.25em .65em;white-space:nowrap;position:relative;transition:background var(--dur),color var(--dur)}
 .gear:hover{background:var(--c-panel);color:var(--c-text)}
 .gear.todo::after{content:'';position:absolute;right:-.25em;top:-.25em;width:.6em;height:.6em;border-radius:50%;background:var(--c-amber);border:2px solid var(--c-bg)}
+/* 자동 스위치: READY일 때만 켤 수 있다. 켜짐·꺼짐은 상태줄 auto 필드를 따르고, 색과 손잡이 위치로 보여 준다(글자는 그대로). */
+.autoSw{display:inline-flex;align-items:center;gap:.5em;flex:none;border-radius:var(--r-pill);padding:.2em .7em .2em .25em;font-size:var(--t-md);font-weight:700;white-space:nowrap;
+  color:var(--c-text);background:var(--c-panel);border:1px solid var(--c-line);transition:background var(--dur),color var(--dur),border-color var(--dur),opacity var(--dur)}
+.autoSw i{position:relative;flex:none;width:2.5em;height:1.5em;border-radius:var(--r-pill);background:var(--c-line-2);transition:background var(--dur)}
+.autoSw i::after{content:'';position:absolute;left:.17em;top:.17em;width:1.16em;height:1.16em;border-radius:50%;background:var(--c-steel);transition:transform var(--dur) var(--ease),background var(--dur)}
+.autoSw[aria-checked=false]:not(:disabled):hover{background:var(--c-panel-2)}
+.autoSw:disabled{color:var(--c-mute);opacity:.55}
+.autoSw[aria-checked=true]{background:var(--a-amber-15);border-color:var(--a-amber-50);color:var(--c-amber-2)}
+.autoSw[aria-checked=true] i{background:var(--c-amber)}
+.autoSw[aria-checked=true] i::after{transform:translateX(1em);background:var(--c-text)}
 .mockbadge{font-size:var(--t-xs);font-weight:800;letter-spacing:.08em;color:var(--c-bg);background:var(--c-amber);border-radius:var(--r-sm);padding:.15em .45em}
 
 /* ---------- 카드 공통 ---------- */
-.card{background:var(--c-panel);border:1px solid var(--c-line);border-radius:var(--r-lg);position:relative;overflow:hidden;min-height:0;min-width:0;animation:reveal .5s var(--ease) both}
+.card{background:var(--c-panel);border:1px solid var(--c-line);border-radius:var(--r-lg);position:relative;overflow:hidden;min-height:0;min-width:0;animation:reveal .5s var(--ease) backwards;transition:opacity var(--dur)}
 .card .title{position:absolute;left:var(--s-3);top:.55rem;font-size:var(--t-md);font-weight:700;letter-spacing:.01em;z-index:2;pointer-events:none}
 .card .hint{position:absolute;right:var(--s-3);top:.55rem;font-size:var(--t-sm);color:var(--c-mute);z-index:2;pointer-events:none;white-space:nowrap}
+/* 흐림 상태. reveal 애니메이션은 backwards로만 채운다: 끝난 뒤에도 값이 남으면(both) 아래 opacity가 적용되지 않는다. */
 .card.off{opacity:.55}
+/* 자동 중: 수동 칸은 흐리게 보이되 만질 수는 있다. 지도에서는 패드 바탕과 끌기 표시만 흐리게 하고 현재 자세·테이블·상태 줄은 또렷이 둔다. */
+#dialCard.auto,#liftCard.auto{opacity:var(--o-dim)}
+#mapCard.auto #padBg{opacity:var(--o-dim-pad)}
+#mapCard.auto #padHint{opacity:calc(.6 * var(--o-dim))}
 #mapCard{grid-column:1;grid-row:2;animation-delay:.05s}
 .side{grid-column:2;grid-row:2;display:grid;grid-template-rows:minmax(0,1fr) auto;gap:var(--s-2);min-height:0}
 #dialCard{animation-delay:.12s}#liftCard{animation-delay:.18s}
@@ -108,6 +125,11 @@ header{grid-column:1/-1;grid-row:1;display:flex;align-items:center;gap:var(--s-3
 .bar i.neg{transform:translateX(-100%)}
 .badge{position:absolute;right:var(--s-3);bottom:var(--s-2);font-size:var(--t-xs);color:var(--c-amber);background:var(--a-amber-15);border:1px solid var(--a-amber-50);border-radius:var(--r-pill);padding:.15em .6em;z-index:2;pointer-events:none;display:none}
 .badge.show{display:block}
+/* 자동 상태 한 줄: 제목 줄 바로 아래. 지도는 이 줄 밑에서 시작하도록 다시 배치한다(MapR.layout). 줄 높이를 rem으로 고정해 글자를 줄여도 높이가 같다. */
+.autobar{position:absolute;left:var(--s-2);right:var(--s-2);top:1.75rem;z-index:2;display:none;border-radius:var(--r-md);padding:var(--s-1) var(--s-2);
+  font-size:var(--t-sm);line-height:1rem;color:var(--c-amber-2);background:var(--a-amber-15);border:1px solid var(--a-amber-50);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.autobar.show{display:block}
+#padBg{transition:opacity var(--dur)}
 .overlay{position:absolute;inset:0;z-index:5;display:none;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-3);background:color-mix(in srgb,var(--c-panel) 72%,transparent);backdrop-filter:blur(3px);text-align:center;padding:var(--s-4)}
 .overlay.show{display:flex}
 .overlay p{margin:0;font-size:var(--t-md);color:var(--c-mute);max-width:26rem;line-height:1.5}
@@ -194,6 +216,7 @@ header{grid-column:1/-1;grid-row:1;display:flex;align-items:center;gap:var(--s-3
 .moveGrid .lab{font-weight:700}.moveGrid .cur{color:var(--c-sky-3)}
 .moveGrid input{width:100%}
 .moveGrid .note{grid-column:1/-1;font-size:var(--t-sm);color:var(--c-mute)}
+.moveGrid .pair{display:grid;grid-template-columns:1fr 1fr;gap:var(--s-2)}
 .rawPane{display:grid;grid-template-rows:auto 1fr;gap:var(--s-2);height:100%}
 .rawRow{display:flex;gap:var(--s-2);align-items:center;flex-wrap:wrap}
 .rawRow input{flex:1;font-family:var(--mono);min-width:10rem}
@@ -231,11 +254,13 @@ header{grid-column:1/-1;grid-row:1;display:flex;align-items:center;gap:var(--s-3
       <span class="chip" id="chipCanopy">캐노피<b>—</b></span>
       <span class="chip" id="chipLift">접기<b>—</b></span>
     </div>
+    <button class="autoSw" id="autoBtn" type="button" role="switch" aria-checked="false" aria-label="자동 모드" disabled><i></i>자동</button>
     <button class="gear" id="gearBtn" type="button" aria-label="세부 화면 열기">⚙ 세부</button>
   </header>
 
   <section class="card" id="mapCard" aria-label="위치 패드">
-    <span class="title">① 위치 패드 · 요 + 뻗기</span><span class="hint">끄는 동안 그 방향으로 이동 · 떼면 정지</span>
+    <span class="title">① 위치 패드 · 요 + 뻗기</span><span class="hint" id="mapHint"></span>
+    <div class="autobar num" id="autoBar"><span id="autoLine"></span></div>
     <svg id="mapSvg" role="application" aria-label="위에서 본 지도. 누른 채 끌면 그 방향으로 캐노피가 이동" preserveAspectRatio="none">
       <defs>
         <radialGradient id="gFan" cx="0.5" cy="1" r="1"><stop offset="0" stop-color="#1e3a52"/><stop offset="1" stop-color="#14212d"/></radialGradient>
@@ -245,6 +270,7 @@ header{grid-column:1/-1;grid-row:1;display:flex;align-items:center;gap:var(--s-3
       </defs>
       <g id="mapStatic"></g>
       <g id="mapDyn"></g>
+      <g id="mapTable"></g>
       <g id="mapKnob" style="display:none"></g>
     </svg>
     <div class="mapReadout num" id="mapReadout" aria-hidden="true">
@@ -304,6 +330,7 @@ header{grid-column:1/-1;grid-row:1;display:flex;align-items:center;gap:var(--s-3
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" data-pane="wiz" aria-selected="true" type="button">준비</button>
         <button class="tab" role="tab" data-pane="move" aria-selected="false" type="button">숫자 이동</button>
+        <button class="tab" role="tab" data-pane="auto" aria-selected="false" type="button">자동 설정</button>
         <button class="tab" role="tab" data-pane="raw" aria-selected="false" type="button">명령·로그</button>
         <button class="tab" role="tab" data-pane="mock" aria-selected="false" type="button" id="mockTab" hidden>모의 기기</button>
       </div>
@@ -330,6 +357,22 @@ header{grid-column:1/-1;grid-row:1;display:flex;align-items:center;gap:var(--s-3
 
     <div class="pane" id="pane-move">
       <div class="moveGrid num" id="moveGrid"></div>
+    </div>
+
+    <div class="pane" id="pane-auto">
+      <div class="moveGrid num">
+        <span class="lab">설치 방위</span><span class="cur" id="siteCur">—</span>
+        <input id="siteIn" type="number" step="0.1" min="0" max="360" inputmode="decimal" placeholder="0 ~ 360 °" aria-label="설치 방위">
+        <button class="btn btn-sm btn-primary" id="siteBtn" type="button">저장</button>
+        <div class="note">요 0°가 가리키는 나침반 방위입니다(북 0°, 시계 방향). 설치할 때 한 번 재서 넣습니다.</div>
+        <span class="lab">테이블</span><span class="cur" id="tableCur">—</span>
+        <span class="pair">
+          <input id="tableDistIn" type="number" step="1" min="0" max="3000" inputmode="decimal" placeholder="거리 0 ~ 3000 mm" aria-label="테이블 거리">
+          <input id="tableBearIn" type="number" step="0.1" min="-180" max="180" inputmode="decimal" placeholder="방향 −180 ~ 180 °" aria-label="테이블 방향">
+        </span>
+        <button class="btn btn-sm btn-primary" id="tableBtn" type="button">저장</button>
+        <div class="note">기둥에서 테이블 중심까지의 거리와 방향(요와 같은 각도계)입니다. 지도에 점으로 표시되고, 자동 모드가 캐노피를 맞추는 자리입니다. 두 값은 기기에 저장되어 껐다 켜도 남습니다.</div>
+      </div>
     </div>
 
     <div class="pane" id="pane-raw">
@@ -365,7 +408,7 @@ header{grid-column:1/-1;grid-row:1;display:flex;align-items:center;gap:var(--s-3
 'use strict';
 (() => {
 /* =====================================================================
- *  설정 (firmware/include/config.h, firmware/APP_PROTOCOL.md v1.1 기준)
+ *  설정 (firmware/include/config.h, firmware/APP_PROTOCOL.md v1.2 기준)
  * ===================================================================== */
 const CFG = {
   AXES: ['yaw', 'reach', 'canopy', 'lift'],
@@ -377,6 +420,8 @@ const CFG = {
   },
   LIFT_JOGV_SCALE: 0.25, JOGV_WINDOW_S: 0.5, JOGV_EXPIRY_MS: 300, DEADZONE: 0.1, LINK_SILENCE_MS: 1000, LINE_MAX: 95,
   CANOPY_YAW_SIGN: 1, STATUS_MS: 100, TICK_MS: 100, HB_MS: 200, PAD_R: 60, DIAL_FULL_DPS: 60, CHUNK: 20,
+  // 자동 모드 (config.h, APP_PROTOCOL.md 7장). 계산은 기기가 하므로 계산 상수는 mock 기기만 쓰고, 입력 범위(AZ, DIST, BEAR)는 세부 시트도 쓴다.
+  AUTO: { H: 2245.4, Z_LO: 850, Z_HI: 1350, MIN_ALT: 30, PERIOD_MS: 120000, TH_YAW: 0.5, TH_REACH: 20, TH_HEAD: 1, YAW_SIGN: 1, AZ: [0, 360], DIST: [0, 3000], BEAR: 180 },
   BLE: { name: 'AvoidSun', svc: '6e400001-b5a3-f393-e0a9-e50e24dcca9e', rx: '6e400002-b5a3-f393-e0a9-e50e24dcca9e', tx: '6e400003-b5a3-f393-e0a9-e50e24dcca9e' },
 };
 const FAULT_BITS = { ESTOP: 1, 'LIM_YAW+': 2, 'LIM_YAW-': 4, LIM_LIFT: 8, WATCHDOG: 16, HOMING: 32, OVERRUN: 64, CONFIG: 128 };
@@ -385,10 +430,14 @@ const FAULT_KO = {
   LIM_LIFT: '접기 리밋 스위치(위·아래 직렬)가 열렸습니다', WATCHDOG: '워치독으로 재시작되었습니다', HOMING: '요 원점 잡기에 실패했습니다',
   OVERRUN: '제어 루프가 50 ms를 넘겨 지연되었습니다', CONFIG: '펌웨어 설정 오류 — 개발자 확인 필요 (reset 불가)',
 };
+// 자동 상태 줄 문구 (상태줄 auto 필드의 code별). RUN 문구는 Auto.text가 만든다.
+const AUTO_KO = { LOW: '해가 낮아 대기', RANGE: '범위 끝 · 일부만 가림', NOTIME: '시각 없음 — 세부에서 시간 맞추기' };
+const AUTO_OFF_KO = { stop: '정지', fault: '고장', 'move refused': '이동이 거부됨' };   // INFO auto off - <이유>. 그 밖의 이유는 수동 명령 이름이다.
 const ERR_KO = {
   FAULT_LATCHED: '고장이 걸려 있어 거부됨', BUSY: '다른 동작이 진행 중', NOT_HOMED: '원점이 없어 거부됨', OUT_OF_RANGE: '범위 끝 (더 갈 수 없음)',
   AUTO_LOCKED: '자동 모드 잠김', NO_HOME_SENSOR_USE_ZERO: '이 축은 home 대신 zero', HAS_HOME_SENSOR_USE_HOME: '요는 zero 대신 home yaw',
   NOT_FAULTED: '고장 상태가 아님', RECOVERY_NOT_ALLOWED: '그 방향으로는 복구 불가', 'line too long': '줄이 너무 깁니다 (95바이트)',
+  TIME_UNSET: AUTO_KO.NOTIME, 'site az must be 0..360': '설치 방위는 0~360°', 'table out of range': '테이블 값이 범위 밖',
 };
 const JOGV_ONLY_ERR = ['OUT_OF_RANGE', 'speed must be -1..1', 'unknown axis (yaw|reach|canopy|lift)'];   // chold의 응답일 수 없는 ERR
 const STATE_KO = { OFF: '연결 안 됨', UNHOMED: '원점 필요', HOMING: '원점 잡는 중', READY: '정상 READY', FAULT: '고장 FAULT' };
@@ -400,6 +449,11 @@ const clamp = (v, lo, hi) => v < lo ? lo : v > hi ? hi : v;
 const f1 = v => { const r = Math.round(v * 10) / 10; return (Object.is(r, -0) || Math.abs(r) < 0.05 ? 0 : r).toFixed(1); };
 const fS = s => String(Math.round(clamp(s, -1, 1) * 100) / 100);
 const D2R = Math.PI / 180;
+const wrap180 = d => ((d + 180) % 360 + 360) % 360 - 180;                                    // → [−180, 180)
+const num = s => /^[-+]?\d*\.?\d+(e[-+]?\d+)?$/i.test(s || '') ? parseFloat(s) : NaN;     // 문자열 전체가 숫자일 때만 (펌웨어 strtof 판정)
+const r1 = v => Math.round(v * 10) / 10;
+const mmss = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+const uMinus = s => s.replace('-', '−');                                                     // 화면 표시용 빼기 기호
 const isoUtc = (d = new Date()) => d.toISOString().replace(/\.\d{3}Z$/, 'Z');
 const SVG_NS = 'http://www.w3.org/2000/svg';
 function svg(tag, attrs, parent) {
@@ -495,10 +549,16 @@ class BleTransport {
 
 /* =====================================================================
  *  mock 기기 (?mock=1): 펌웨어 main.cpp + APP_PROTOCOL.md를 따르는 페이지 내 가짜 ESP32.
- *  가속 램프는 없고(정속), 그 밖의 허가·목표 계산·만료·고정·링크 감시는 펌웨어 규칙 그대로다.
+ *  가속 램프는 없고(정속), 그 밖의 허가·목표 계산·만료·고정·링크 감시·자동 모드는 펌웨어 규칙 그대로다.
+ *  자동 모드의 해 위치만 실제 계산이 아니라 가짜다(sky).
  * ===================================================================== */
 class MockDevice {
-  constructor() { this.onBytes = null; this.onClose = null; this.connected = false; this.timer = null; this.name = '모의 기기'; this.boot(); }
+  constructor() {
+    this.onBytes = null; this.onClose = null; this.connected = false; this.timer = null; this.name = '모의 기기';
+    this.site = 0; this.table = { dist: 1100, bearing: 0 };            // Preferences에 저장되는 값: 재부팅해도 남는다
+    this.autoPeriod = CFG.AUTO.PERIOD_MS; this.skyPin = null;          // 시험용 설정 (__mock.setAutoPeriod, __mock.setSun)
+    this.boot();
+  }
   boot() {
     this.pos = { yaw: 0, reach: 0, canopy: 0, lift: 0 };
     this.off = { yaw: -90, lift: 0 };                 // 물리각 = 표시각 + off (홀 센서는 물리 −95°)
@@ -509,6 +569,7 @@ class MockDevice {
     this.jogvLast = {}; this.jogvMask = 0; this.jogvSlew = 0; this.liftDir = 0; this.liftTripDir = 0;
     this.timeKnown = false; this.timeBase = 0; this.timeMs = 0; this.lastRxMs = now(); this.silenceReported = false;
     this.rxLine = ''; this.rxOver = false; this.statusAcc = 0; this.lastTick = now(); this.choldErr = '';
+    this.auto = { on: false, last: 0, code: 'NOTIME', alt: 0, yaw: 0, reach: 0, head: 0, shift: 0 };
   }
   /* --- 전송체 인터페이스 --- */
   async open() { this.connected = true; this.lastRxMs = now(); this.silenceReported = false; this.rxLine = ''; this.rxOver = false; this.lastTick = now(); if (!this.timer) this.timer = setInterval(() => this.tick(), 20); }
@@ -522,7 +583,8 @@ class MockDevice {
     }
   }
   async close() { this.drop(); }
-  drop() { if (!this.connected) return; this.connected = false; this.stopAll(); this.rxLine = ''; this.onClose && this.onClose(); }
+  // BLE 끊김: 자동이 켜져 있으면 jogv만 해제하고 자동은 계속 돈다(폰 없이 도는 모드). 꺼져 있으면 stop과 같다.
+  drop() { if (!this.connected) return; this.connected = false; if (this.auto.on) this.jogvMask = 0; else this.stopAll(); this.rxLine = ''; this.onClose && this.onClose(); }
   emit(line) {
     if (!this.connected || !this.onBytes) return;
     const s = line + '\n'; const parts = []; for (let i = 0; i < s.length; i += CFG.CHUNK) parts.push(s.slice(i, i + CFG.CHUNK));
@@ -548,7 +610,7 @@ class MockDevice {
   latch(bits) {
     const fresh = bits & ~this.faults; if (!fresh) return;
     if (fresh & FAULT_BITS.LIM_LIFT) this.liftTripDir = this.liftDir;
-    this.faults |= bits; this.dropTrust(); this.forceStopAll(); this.hold.on = false; this.emit('FAULT ' + this.faultNames());
+    this.faults |= bits; this.dropTrust(); this.forceStopAll(); this.hold.on = false; this.autoDrop('fault'); this.emit('FAULT ' + this.faultNames());
   }
   faultNames() { const n = []; for (const k in FAULT_BITS) if (this.faults & FAULT_BITS[k]) n.push(k); return n.length ? n.join(',') : 'NONE'; }
   state() { return this.faults ? 'FAULT' : this.homingActive ? 'HOMING' : CFG.AXES.every(a => this.homed[a]) ? 'READY' : 'UNHOMED'; }
@@ -560,10 +622,12 @@ class MockDevice {
     if (this.forced.estop) this.forced.estop = false;            // 비상정지는 순간 입력으로 흉내: 래치만 남는다
     if (!this.running('lift')) this.liftDir = 0;
     if (this.homingActive) this.homeTick();
-    if (this.connected && (this.anyRunning() || this.homingActive) && t - this.lastRxMs > CFG.LINK_SILENCE_MS) {
+    // 무신호 정지는 폰이 시킨 움직임만 대상이다. 자동이 스스로 움직이는 것은 세지 않는다.
+    if (this.connected && ((!this.auto.on && this.anyRunning()) || this.homingActive) && t - this.lastRxMs > CFG.LINK_SILENCE_MS) {
       this.stopAll(); if (!this.silenceReported) { this.silenceReported = true; this.emit('INFO link silent - stopped'); }
     }
     for (const a of CFG.AXES) { const b = this.bit(a); if ((this.jogvMask & b) && t - (this.jogvLast[a] || 0) > CFG.JOGV_EXPIRY_MS) { this.jogvMask &= ~b; if (this.mv[a].kind === 'jogv') this.stopMove(a); this.jogvSlew = a === 'canopy' ? 0 : this.jogvSlew; } }
+    if (this.auto.on && t - this.auto.last >= this.autoPeriod) this.autoUpdate();
     if (this.hold.on) {
       if (this.jogvMask & this.bit('canopy')) this.hold.target = clamp(this.hold.target + CFG.A.canopy.jog * this.jogvSlew * dt, -180, 180);
       let joint = this.hold.target - CFG.CANOPY_YAW_SIGN * this.pos.yaw;
@@ -584,7 +648,7 @@ class MockDevice {
   }
   statusLine() {
     const h = CFG.AXES.map(a => this.homed[a] ? '1' : '0').join(''), r = CFG.AXES.map(a => this.running(a) ? '1' : '0').join('');
-    return `S ${this.state()} ${this.faultNames()} ${f1(this.pos.yaw)} ${f1(this.pos.reach)} ${f1(this.pos.canopy)} ${f1(this.pos.lift)} ${h} ${r} ${this.homing.phase} ${this.hold.on ? 'H' + f1(this.hold.target) : '-'}`;
+    return `S ${this.state()} ${this.faultNames()} ${f1(this.pos.yaw)} ${f1(this.pos.reach)} ${f1(this.pos.canopy)} ${f1(this.pos.lift)} ${h} ${r} ${this.homing.phase} ${this.hold.on ? 'H' + f1(this.hold.target) : '-'} ${this.autoField()}`;
   }
   /* --- 원점(요 홀 센서) --- */
   homeStart() {
@@ -608,24 +672,46 @@ class MockDevice {
     const t = line.trim().split(/[ \t]+/).filter(Boolean); const verb = t[0], a1 = t[1], a2 = t[2];
     if (!verb) return this.emit('ERR empty');
     if (t.length > 3) return this.emit('ERR too many arguments');
-    const simple = ['help', 'status', 'stop', 'reset', 'hb', 'auto'];
+    const simple = ['help', 'status', 'stop', 'reset', 'hb'];
     if (simple.includes(verb)) { if (a1) return this.emit('ERR no arguments expected'); return this['c_' + verb](); }
     if (['jog', 'recover', 'move', 'home', 'zero', 'jogv'].includes(verb)) {
       if (!CFG.AXES.includes(a1)) return this.emit('ERR unknown axis (yaw|reach|canopy|lift)');
       let v = 0;
-      if (verb === 'jogv') { v = parseFloat(a2); if (!/^[-+]?\d*\.?\d+(e[-+]?\d+)?$/i.test(a2 || '') || !isFinite(v) || v < -1 || v > 1) return this.emit('ERR speed must be -1..1'); }
-      else if (verb === 'jog' || verb === 'recover' || verb === 'move') { v = parseFloat(a2); if (!/^[-+]?\d*\.?\d+(e[-+]?\d+)?$/i.test(a2 || '') || !isFinite(v)) return this.emit('ERR value must be a finite number'); }
+      if (verb === 'jogv') { v = num(a2); if (!(v >= -1 && v <= 1)) return this.emit('ERR speed must be -1..1'); }
+      else if (verb === 'jog' || verb === 'recover' || verb === 'move') { v = num(a2); if (!isFinite(v)) return this.emit('ERR value must be a finite number'); }
       else if (a2) return this.emit('ERR no value expected');
+      if (verb !== 'jogv' || Math.abs(v) >= CFG.DEADZONE) this.autoOff(verb);       // 수동 명령은 허가 검사보다 먼저 자동을 끈다 (jogv … 0은 제외)
       return this['c_' + verb](a1, v);
     }
     if (verb === 'chold') {
       if (a2) return this.emit('ERR too many arguments');
-      if (a1 === 'off') { this.hold.on = false; return this.emit('OK'); }
+      if (a1 === 'off') { this.autoOff('chold'); this.hold.on = false; return this.emit('OK'); }
       const v = parseFloat(a1); if (!/^[-+]?\d*\.?\d+$/.test(a1 || '') || v < -180 || v > 180) return this.emit('ERR heading must be -180..180');
+      this.autoOff('chold');                                                       // chold도 수동 명령이라 자동을 끈다
       if (this.choldErr) return this.emit('ERR ' + this.choldErr);                 // 시험용: chold 거부 흉내 (__mock.failChold)
       if (this.faults) return this.emit('ERR FAULT_LATCHED'); if (this.homingActive) return this.emit('ERR BUSY');
       if (!this.homed.yaw || !this.homed.canopy) return this.emit('ERR NOT_HOMED');
-      this.hold = { on: true, target: v, last: null, atLimit: false }; return this.emit('OK');
+      this.startHold(v); return this.emit('OK');
+    }
+    if (verb === 'auto') {
+      if (a2) return this.emit('ERR too many arguments');
+      if (!a1) return this.emit('INFO auto ' + this.autoField());
+      if (a1 === 'off') { if (this.auto.on) { this.stopAutoMotion(); this.auto.on = false; } return this.emit('OK'); }
+      if (a1 !== 'on') return this.emit('ERR auto takes on|off');
+      if (this.faults) return this.emit('ERR FAULT_LATCHED'); if (this.homingActive) return this.emit('ERR BUSY');
+      if (!CFG.AXES.every(a => this.homed[a])) return this.emit('ERR NOT_HOMED'); if (this.clock() < 0) return this.emit('ERR TIME_UNSET');
+      this.auto.on = true; this.autoUpdate();                                      // 켜는 즉시 한 번 계산하고 움직인다
+      return this.emit(this.auto.on ? 'OK' : 'ERR OUT_OF_RANGE');                  // 첫 이동이 거부되면 이미 꺼져 있다
+    }
+    if (verb === 'site') {
+      if (!a1) return this.emit('INFO site az ' + this.site.toFixed(1));
+      const v = num(a2), [lo, hi] = CFG.AUTO.AZ; if (a1 !== 'az' || !(v >= lo && v <= hi)) return this.emit('ERR site az must be 0..360');
+      this.site = v; return this.emit('OK');
+    }
+    if (verb === 'table') {
+      if (!a1) return this.emit(`INFO table ${this.table.dist.toFixed(1)} ${this.table.bearing.toFixed(1)}`);
+      const d = num(a1), b = num(a2), [lo, hi] = CFG.AUTO.DIST; if (!(d >= lo && d <= hi) || !(Math.abs(b) <= CFG.AUTO.BEAR)) return this.emit('ERR table out of range');
+      this.table = { dist: d, bearing: b }; return this.emit('OK');
     }
     if (verb === 'time') {
       if (a2) return this.emit('ERR too many arguments');
@@ -634,22 +720,22 @@ class MockDevice {
     }
     return this.emit("ERR unknown command, try 'help'");
   }
-  c_help() { ['status | stop | reset | jog <axis> <delta> | recover <axis> <delta> | move <axis> <pos>', 'home yaw | zero <reach|canopy|lift> | time <ISO-UTC> | auto', 'jogv <axis> <-1..1> (hold, resend every 100 ms) | hb | chold <deg>|off', 'axes: yaw(deg) reach(mm) canopy(deg) lift(deg)'].forEach(l => this.emit(l)); }
+  c_help() { ['status | stop | reset | jog <axis> <delta> | recover <axis> <delta> | move <axis> <pos>', 'home yaw | zero <reach|canopy|lift> | time <ISO-UTC>', 'jogv <axis> <-1..1> (hold, resend every 100 ms) | hb | chold <deg>|off', 'auto [on|off] | site [az <0..360>] | table [<0..3000 mm> <-180..180 deg>]', 'axes: yaw(deg) reach(mm) canopy(deg) lift(deg)'].forEach(l => this.emit(l)); }
   c_status() {
     this.emit(`state=${this.state()} faults=${this.faultNames()}`);
     for (const a of CFG.AXES) this.emit(`  ${a.padEnd(6)} pos=${this.pos[a].toFixed(3)} ${a === 'reach' ? 'mm' : 'deg'} homed=${this.homed[a] ? 1 : 0} running=${this.running(a) ? 1 : 0}`);
     if (!this.timeKnown) this.emit("  time=UNSET (use 'time YYYY-MM-DDTHH:MM:SSZ')");
     else this.emit(`  time=${isoUtc(new Date(this.timeBase + (now() - this.timeMs)))} source=MANUAL`);
     this.emit(`  homing=${this.homing.phase}`);
+    this.emit(`  auto=${this.autoField()} site az=${this.site.toFixed(1)} table=${this.table.dist.toFixed(1)} mm ${this.table.bearing.toFixed(1)} deg`);
   }
-  c_stop() { this.stopAll(); this.emit('OK stopping'); }
+  c_stop() { this.autoDrop('stop'); this.stopAll(); this.emit('OK stopping'); }
   c_reset() {
     const i = this.inputs();
     if (this.anyRunning() || (this.faults & FAULT_BITS.CONFIG) || !i.estopOk || !i.yawPosOk || !i.yawNegOk || !i.liftOk) return this.emit('ERR reset refused: inputs not healthy or motion running');
     this.faults = 0; this.liftTripDir = 0; this.emit('OK reset - all axes UNHOMED, re-home/zero required');
   }
   c_hb() {}
-  c_auto() { this.emit('ERR AUTO_LOCKED'); }
   rangeOk(a, u) { const c = CFG.A[a]; return c.verified && u >= c.min && u <= c.max; }
   c_jog(a, d) {
     if (this.faults) return this.emit('ERR FAULT_LATCHED'); if (this.homingActive) return this.emit('ERR BUSY');
@@ -700,12 +786,58 @@ class MockDevice {
     }
     this.moveTo(a, target, speed, 'jogv'); this.jogvMask |= b; this.jogvLast[a] = now();
   }
+  /* --- 자동 모드 (APP_PROTOCOL.md 7장; main.cpp autoUpdate, lib/core/shade와 같은 계산) --- */
+  clock() { return this.timeKnown ? this.timeBase + (now() - this.timeMs) : -1; }
+  heading() { return CFG.CANOPY_YAW_SIGN * this.pos.yaw + this.pos.canopy; }
+  startHold(deg) { this.hold = { on: true, target: deg, last: null, atLimit: false }; }
+  // 가짜 해: 천문 계산이 아니다. __mock.setSun(고도, 방위)로 고정하지 않으면 mock 시계(time 명령)에서
+  // 한국 시각 6시에 뜨고 18시에 지며 정오에 고도 75°·방위 180°인 단순한 호를 만든다.
+  sky() {
+    if (this.skyPin) return this.skyPin;
+    const h = ((this.clock() / 3600000 + 9) % 24 + 24) % 24;
+    return { alt: 75 * Math.sin(Math.PI * (h - 6) / 12), az: h * 15 };
+  }
+  // 캐노피를 둘 자리. alt·az는 해 고도와 나침반 방위, ref는 지금의 고정 목표(없으면 현재 절대 방향).
+  shade(alt, az, ref) {
+    const A = CFG.AUTO, T = this.table; if (alt < A.MIN_ALT) return { code: 'LOW' };
+    const ts = wrap180(A.YAW_SIGN * (az - this.site)), m = ((A.H - A.Z_LO) + (A.H - A.Z_HI)) / 2 / Math.tan(alt * D2R);
+    const cx = T.dist * Math.sin(T.bearing * D2R) + m * Math.sin(ts * D2R), cy = T.dist * Math.cos(T.bearing * D2R) + m * Math.cos(ts * D2R);
+    const r0 = Math.hypot(cx, cy), y0 = Math.atan2(cx, cy) / D2R, reach = clamp(r0, CFG.A.reach.min, CFG.A.reach.max), yaw = clamp(y0, CFG.A.yaw.min, CFG.A.yaw.max);
+    let head = ts; for (const c of [ts, ts + 180, ts - 180]) if (c >= -180 && c <= 180 && Math.abs(c - ref) < Math.abs(head - ref)) head = c;
+    return { code: reach !== r0 || yaw !== y0 ? 'RANGE' : 'RUN', shift: m, yaw, reach, head };
+  }
+  autoUpdate() {
+    const au = this.auto, A = CFG.AUTO; au.last = now();
+    if (this.clock() < 0) { au.code = 'NOTIME'; return; }
+    const s = this.sky(), r = this.shade(s.alt, s.az, this.hold.on ? this.hold.target : this.heading());
+    au.alt = s.alt; au.code = r.code; if (r.code === 'LOW') return;
+    au.yaw = r.yaw; au.reach = r.reach; au.head = r.head; au.shift = r.shift;
+    if (!(Math.abs(r.yaw - this.pos.yaw) > A.TH_YAW || Math.abs(r.reach - this.pos.reach) > A.TH_REACH || Math.abs(r.head - this.heading()) > A.TH_HEAD)) return;
+    for (const [a, u] of [['yaw', r.yaw], ['reach', r.reach]]) {
+      if (this.faults || this.homingActive || !this.homed[a] || !this.rangeOk(a, u)) return this.autoOff('move refused');
+      this.moveTo(a, u, CFG.A[a].vmax, 'auto');
+    }
+    this.startHold(r.head);                                                        // 방향은 chold와 같은 고정으로 맞춘다. lift는 움직이지 않는다.
+  }
+  autoField() {
+    const au = this.auto; if (!au.on) return '-';
+    const left = this.autoPeriod - (now() - au.last), sec = left <= 0 ? 0 : Math.ceil(left / 1000), alt = au.code === 'NOTIME' ? '-' : f1(au.alt);
+    return au.code === 'RUN' || au.code === 'RANGE' ? `${au.code},${sec},${alt},${f1(au.yaw)},${f1(au.reach)},${f1(au.head)}` : `${au.code},${sec},${alt},-,-,-`;
+  }
+  // 자동이 시킨 움직임을 멈춘다. 고정은 켜 둔 채 지금 방향으로 다시 잡아, 자동의 목표를 더 따라가지 않게 한다.
+  stopAutoMotion() {
+    this.stopMove('yaw'); this.stopMove('reach'); if (!this.hold.on) return;
+    this.stopMove('canopy'); this.hold.target = clamp(this.heading(), -180, 180); this.hold.last = this.pos.canopy;
+  }
+  autoDrop(reason) { if (!this.auto.on) return; this.auto.on = false; this.emit('INFO auto off - ' + reason); }
+  autoOff(reason) { if (!this.auto.on) return; this.stopAutoMotion(); this.autoDrop(reason); }
   /* --- 시험용 API (window.__mock) --- */
   api() {
     const self = this;
     return {
-      state() { return { state: self.state(), faults: self.faultNames(), pos: { ...self.pos }, homed: { ...self.homed }, running: Object.fromEntries(CFG.AXES.map(a => [a, self.running(a)])), phase: self.homing.phase, hold: { ...self.hold }, jogvMask: self.jogvMask, connected: self.connected }; },
-      ready(pose) { self.forced = { estop: false, yawPos: false, yawNeg: false, lift: false }; if (!(self.faults & FAULT_BITS.CONFIG)) self.faults = 0; if (self.faults) return self.state(); self.stopAll(); const p = Object.assign({ yaw: -12, reach: 900, canopy: 30, lift: 15 }, pose || {}); for (const a of CFG.AXES) { self.pos[a] = p[a]; self.homed[a] = true; } self.off.yaw = 0; self.off.lift = 0; self.timeKnown = true; self.timeBase = Date.now(); self.timeMs = now(); return self.state(); },
+      state() { return { state: self.state(), faults: self.faultNames(), pos: { ...self.pos }, homed: { ...self.homed }, running: Object.fromEntries(CFG.AXES.map(a => [a, self.running(a)])), phase: self.homing.phase, hold: { ...self.hold }, jogvMask: self.jogvMask, connected: self.connected,
+        auto: { ...self.auto, field: self.autoField(), period: self.autoPeriod }, site: self.site, table: { ...self.table }, sky: self.skyPin || self.clock() >= 0 ? { ...self.sky() } : null }; },
+      ready(pose) { self.forced = { estop: false, yawPos: false, yawNeg: false, lift: false }; if (!(self.faults & FAULT_BITS.CONFIG)) self.faults = 0; if (self.faults) return self.state(); self.stopAll(); self.auto.on = false; const p = Object.assign({ yaw: -12, reach: 900, canopy: 30, lift: 15 }, pose || {}); for (const a of CFG.AXES) { self.pos[a] = p[a]; self.homed[a] = true; } self.off.yaw = 0; self.off.lift = 0; self.timeKnown = true; self.timeBase = Date.now(); self.timeMs = now(); return self.state(); },
       set(p) { for (const a in p) if (a in self.pos) { self.stopMove(a); self.pos[a] = p[a]; } },
       inject(name) {
         if (name === 'ESTOP') self.forced.estop = true; else if (name === 'LIM_YAW+') self.forced.yawPos = true; else if (name === 'LIM_YAW-') self.forced.yawNeg = true;
@@ -714,6 +846,9 @@ class MockDevice {
       },
       release() { self.forced = { estop: false, yawPos: false, yawNeg: false, lift: false }; },
       failChold(reason) { self.choldErr = reason || ''; },
+      setSun(alt, az) { self.skyPin = alt == null ? null : { alt, az }; },           // 가짜 해를 고정한다. 인자 없이 부르면 다시 mock 시계를 따른다.
+      setAutoPeriod(ms) { self.autoPeriod = ms > 0 ? ms : CFG.AUTO.PERIOD_MS; },     // 자동 재계산 주기(시험용). 0이면 기본 120초.
+      setTime(iso) { self.timeKnown = iso != null; if (self.timeKnown) { self.timeBase = Date.parse(iso); self.timeMs = now(); } },   // null이면 시각 모름
       reboot() { const c = self.connected; self.boot(); self.connected = c; },
       drop() { self.drop(); },
       cmd(line) { self.handle(line); },
@@ -728,8 +863,9 @@ class MockDevice {
  * ===================================================================== */
 const App = {
   mockMode: new URLSearchParams(location.search).get('mock') === '1', mock: null,
-  st: { conn: 'off', devName: '', state: 'OFF', faults: [], pos: { yaw: 0, reach: 0, canopy: 0, lift: 0 }, homed: [0, 0, 0, 0], run: [0, 0, 0, 0], phase: 'IDLE', hold: { on: false, deg: 0 }, holdKnown: false, lastS: 0, timeSrc: '—', firstS: true, recoverNote: '' },
-  disp: { yaw: 0, reach: 600, canopy: 0, lift: 0 }, dirty: true, hbTimer: null, log: [], logDirty: false, toastT: 0, toastMsg: '', toastTimer: null,
+  st: { conn: 'off', devName: '', state: 'OFF', faults: [], pos: { yaw: 0, reach: 0, canopy: 0, lift: 0 }, homed: [0, 0, 0, 0], run: [0, 0, 0, 0], phase: 'IDLE', hold: { on: false, deg: 0 }, holdKnown: false, lastS: 0, timeSrc: '—', firstS: true, recoverNote: '',
+    auto: { on: false, code: '', sec: 0, alt: NaN, yaw: NaN, reach: NaN, head: NaN }, site: null, table: null },   // auto: 상태줄 11번째 필드. site·table: 조회값(모르면 null)
+  disp: { yaw: 0, reach: 600, canopy: 0, lift: 0 }, dirty: true, hbTimer: null, log: [], logDirty: false, toastT: 0, toastMsg: '', toastTimer: null, seq: 0,
   canJog() { return this.st.conn === 'on' && (this.st.state === 'UNHOMED' || this.st.state === 'READY'); },
   heading() { return CFG.CANOPY_YAW_SIGN * this.st.pos.yaw + this.st.pos.canopy; },
   send(line) {
@@ -764,6 +900,11 @@ const App = {
       const h = t[10]; st.holdKnown = h !== undefined;
       if (h && h[0] === 'H') { st.hold = { on: true, deg: parseFloat(h.slice(1)) || 0 }; Chold.pending = null; Chold.failed = ''; }
       else if (now() - Chold.okAt > 400) st.hold = { on: false, deg: st.hold.deg };   // chold OK 직후 400 ms는 그 전에 출발한 '-' 줄을 무시
+      // 11번째 auto 필드: '-'(꺼짐) 또는 '<code>,<다음 갱신까지 초>,<해 고도>,<목표 요>,<목표 뻗기>,<목표 절대 방향>'.
+      // 필드가 없는 줄(이전 펌웨어)은 꺼짐으로 본다. 스위치·상태 줄·흐림은 이 값만 따른다.
+      const au = t[11];
+      if (au && au !== '-') { const p = au.split(','), n = i => parseFloat(p[i]); st.auto = { on: true, code: p[0], sec: n(1) || 0, alt: n(2), yaw: n(3), reach: n(4), head: n(5) }; }
+      else if (st.auto.on) st.auto = { ...st.auto, on: false };
       st.lastS = now();
       if (st.firstS) { st.firstS = false; Object.assign(this.disp, st.pos); }
       if (st.conn !== 'on') st.conn = 'on';
@@ -774,13 +915,13 @@ const App = {
       return;
     }
     this.addLog('rx', l);
-    if (Chold.reply(l)) { this.dirty = true; return; }
+    if (Auto.reply(l) || Chold.reply(l)) { this.dirty = true; return; }
     if (l.startsWith('ERR ')) {
       const code = l.slice(4); const ko = ERR_KO[code];
       if (code === 'RECOVERY_NOT_ALLOWED') st.recoverNote = '멈춘 상태에서 걸렸거나 방향이 맞지 않습니다. 끝을 눈으로 확인하고 손으로 푼 뒤 해제(reset)하세요.';
       this.toast((ko ? ko + ' · ' : '') + l, true);
     } else if (l.startsWith('FAULT ')) { st.faults = l.slice(6).split(','); st.state = 'FAULT'; this.toast('고장: ' + l.slice(6), true); }
-    else if (l.startsWith('INFO ')) this.toast(l.slice(5));
+    else if (l.startsWith('INFO ')) { if (!Auto.info(l.slice(5))) this.toast(l.slice(5)); }
     else if (l === 'OK yaw homed') this.toast('요 원점 완료 (−95°)');
     else if (l.startsWith('OK reset')) { this.toast('고장 해제됨 — 모든 축 원점을 다시 잡으세요'); st.recoverNote = ''; }
     else if (/^\s*time=/.test(l)) { const m = l.match(/time=(\S+)(?:\s+source=(\S+))?/); st.timeSrc = m[1] === 'UNSET' ? 'UNSET' : (m[2] || 'MANUAL') + ' ' + m[1]; }
@@ -792,18 +933,19 @@ const App = {
  * state=READY이고 상태줄 hold 필드가 '-'이면 chold <현재 절대 방향>을 보낸다:
  *   (a) READY로 들어올 때마다 1회, (b) 패드·다이얼을 만질 때 첫 jogv 앞에(터치당 최대 1회).
  * 앞선 chold의 응답을 기다리는 동안에는 다시 보내지 않는다. ERR이면 이유를 보여 주고 다음 터치까지 재시도하지 않는다.
- * 응답 판정: chold를 보낸 뒤 처음 오는 'OK' 또는 ERR(jogv만 낼 수 있는 이유는 제외). 기기가 줄 순서대로 답한다는 전제다. */
+ * 응답 판정: chold를 보낸 뒤 처음 오는 'OK' 또는 ERR(jogv만 낼 수 있는 이유는 제외). 기기가 줄 순서대로 답한다는 전제다.
+ * 자동 모드 중에는 (a)를 하지 않는다: chold는 수동 명령이라 자동을 끄기 때문이다(재연결 직후 포함). 터치 때는 auto off를 먼저 보낸 뒤 건다. */
 const Chold = {
   pending: null, failed: '', okAt: -1e9,
-  ensure() {
+  ensure(touch) {
     const st = App.st;
-    if (st.conn !== 'on' || st.state !== 'READY' || !st.holdKnown || st.hold.on || this.pending) return false;
+    if (st.conn !== 'on' || st.state !== 'READY' || !st.holdKnown || st.hold.on || this.pending || (st.auto.on && !touch)) return false;
     const deg = f1(clamp(App.heading(), -180, 180));
     if (!App.send('chold ' + deg)) return false;
-    this.pending = { deg: parseFloat(deg), t: now() }; App.dirty = true;
+    this.pending = { deg: parseFloat(deg), t: now(), seq: ++App.seq }; App.dirty = true;
     return true;
   },
-  touch() { this.failed = ''; this.ensure(); },
+  touch() { this.failed = ''; this.ensure(true); },
   reply(l) {
     const p = this.pending; if (!p) return false;
     if (l === 'OK') { this.pending = null; this.failed = ''; this.okAt = now(); App.st.hold = { on: true, deg: p.deg }; return true; }
@@ -814,6 +956,50 @@ const Chold = {
   },
   expire() { if (this.pending && now() - this.pending.t > 1500) { this.pending = null; this.failed = '응답 없음'; App.toast('캐노피 절대 고정(chold) 응답 없음', true); } },
   clear() { this.pending = null; this.failed = ''; this.okAt = -1e9; },
+};
+
+/* ---------- 자동 모드 (APP_PROTOCOL.md 7장) ----------
+ * 계산은 기기가 하고 앱은 켜고 끄기와 표시만 한다. 스위치·상태 줄·흐림은 상태줄 auto 필드만 따른다.
+ * 자동 중에 수동 칸(패드·다이얼·접기)을 만지면 그 터치의 첫 jogv와 chold보다 먼저 auto off를 보낸다. STOP은 stop만 보낸다.
+ * 연결이 끊기거나 화면이 가려져도 앱은 auto off를 보내지 않는다: 자동은 폰 없이 도는 모드다.
+ * 응답 판정: auto on/off도 줄마다 OK나 ERR이 하나 온다. chold의 응답과 섞이지 않게 보낸 순서(seq)대로 짝짓는다. */
+const Auto = {
+  sent: [],                                       // 응답을 기다리는 auto on/off: { seq, t }
+  request(on) { if (!App.send(on ? 'auto on' : 'auto off')) return false; this.sent.push({ seq: ++App.seq, t: now() }); return true; },
+  touch() { if (App.st.auto.on) this.request(false); },
+  reply(l) {
+    while (this.sent.length && now() - this.sent[0].t > 1500) this.sent.shift();          // 응답이 없던 것은 버린다
+    const p = this.sent[0];
+    if (!p || (Chold.pending && Chold.pending.seq < p.seq)) return false;                 // 먼저 보낸 chold가 있으면 그쪽 응답이다
+    if (l !== 'OK' && (!l.startsWith('ERR ') || JOGV_ONLY_ERR.includes(l.slice(4)))) return false;
+    this.sent.shift();
+    if (l !== 'OK') App.toast('자동 모드: ' + (ERR_KO[l.slice(4)] || l.slice(4)) + ' · ' + l, true);
+    return true;
+  },
+  // 기기가 알려 주는 설정값(조회 응답은 토스트 없이 반영)과 자동 해제 사유
+  info(s) {
+    let m;
+    if ((m = s.match(/^site az (-?[\d.]+)$/))) { App.st.site = parseFloat(m[1]); return true; }
+    if ((m = s.match(/^table (-?[\d.]+) (-?[\d.]+)$/))) { App.st.table = { dist: parseFloat(m[1]), bearing: parseFloat(m[2]) }; MapR.drawTable(); return true; }
+    if ((m = s.match(/^auto off - (.+)$/))) { App.toast('자동 꺼짐 · ' + (AUTO_OFF_KO[m[1]] || '수동 조작 (' + m[1] + ')')); return true; }
+    return false;
+  },
+  // 상태 한 줄. 예: 자동 · 다음 이동 1:40 · 해 고도 41° · 목표 요 −14.2° / 뻗기 1,265 mm / 캐노피 205°
+  text(au) {
+    if (au.code === 'NOTIME') return '자동 · ' + AUTO_KO.NOTIME;
+    const next = mmss(au.sec), alt = isFinite(au.alt) ? ` · 해 고도 ${Math.round(au.alt)}°` : '';
+    if (au.code === 'LOW') return `자동 · ${AUTO_KO.LOW} · 다음 확인 ${next}${alt}`;
+    const goal = isFinite(au.yaw) && isFinite(au.reach) && isFinite(au.head)
+      ? ` · 목표 요 ${uMinus(f1(au.yaw))}° / 뻗기 ${Math.round(au.reach).toLocaleString('en-US')} mm / 캐노피 ${uMinus(String(Math.round(au.head)))}°` : '';
+    return au.code === 'RANGE' ? `자동 · ${AUTO_KO.RANGE} · 다음 이동 ${next}${goal}` : `자동 · 다음 이동 ${next}${alt}${goal}`;
+  },
+  // 한 줄에 다 들어가게, 넘칠 때만 글자를 줄인다(최소 80%, 그래도 넘치면 말줄임).
+  fit() {
+    const bar = $('autoBar'); bar.style.fontSize = '';
+    if (!bar.classList.contains('show')) return;
+    const cs = getComputedStyle(bar), room = bar.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), k = room / $('autoLine').offsetWidth;
+    if (k < 1) bar.style.fontSize = `calc(var(--t-sm) * ${Math.max(k - .01, .8).toFixed(3)})`;
+  },
 };
 
 /* ---------- 좌표 (세로 화면에서는 #app 전체가 90° 회전해 있다) ---------- */
@@ -839,7 +1025,7 @@ const pad = {
   down(ev) {
     if (ev.button > 0 || !App.canJog() || Holds.active) return;
     ev.preventDefault(); const p = Geo.local(ev.currentTarget, ev); this.ptr = ev.pointerId; this.origin = p; this.cur = p; capture(ev.currentTarget, ev);
-    Chold.touch(); Holds.engage(this); App.dirty = true;
+    Auto.touch(); Chold.touch(); Holds.engage(this); App.dirty = true;
   },
   move(ev) { if (ev.pointerId !== this.ptr) return; this.cur = Geo.local(ev.currentTarget, ev); this.s = this.compute(); App.dirty = true; },
   up(ev) { if (ev.pointerId === this.ptr) Holds.release(); },
@@ -863,7 +1049,7 @@ const dial = {
   down(ev) {
     if (ev.button > 0 || !App.canJog() || Holds.active) return;
     ev.preventDefault(); this.ptr = ev.pointerId; this.lastAng = this.angle(ev); this.acc = 0; this.tickT = now(); this.s = 0; capture(ev.currentTarget, ev);
-    Chold.touch(); $('dialSvg').classList.add('held'); Holds.engage(this);
+    Auto.touch(); Chold.touch(); $('dialSvg').classList.add('held'); Holds.engage(this);
   },
   move(ev) { if (ev.pointerId !== this.ptr) return; const a = this.angle(ev); let d = a - this.lastAng; d = ((d + 540) % 360) - 180; this.acc += d; this.lastAng = a; },
   up(ev) { if (ev.pointerId === this.ptr) Holds.release(); },
@@ -879,7 +1065,7 @@ const dial = {
 function bindHold(el) {
   const axis = el.dataset.axis, s = el.dataset.s;
   const ctl = { ptr: null, el, tick() { App.send(`jogv ${axis} ${s}`); }, release() { el.classList.remove('held'); ctl.ptr = null; App.send(`jogv ${axis} 0`); } };
-  el.addEventListener('pointerdown', ev => { if (ev.button > 0 || el.disabled || Holds.active) return; ev.preventDefault(); ctl.ptr = ev.pointerId; capture(el, ev); el.classList.add('held'); Holds.engage(ctl); });
+  el.addEventListener('pointerdown', ev => { if (ev.button > 0 || el.disabled || Holds.active) return; ev.preventDefault(); ctl.ptr = ev.pointerId; capture(el, ev); el.classList.add('held'); Auto.touch(); Holds.engage(ctl); });
   el.addEventListener('pointermove', ev => { if (ev.pointerId !== ctl.ptr) return; const r = el.getBoundingClientRect(); if (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom) Holds.release(); });
   ['pointerup', 'pointercancel'].forEach(t => el.addEventListener(t, ev => { if (ev.pointerId === ctl.ptr) Holds.release(); }));
 }
@@ -899,20 +1085,23 @@ const CAN = { w: 520, h: 300 };                       // 지도에 그리는 캐
 const MapR = {
   w: 0, h: 0, k: 0.1, px: 0, py: 0, els: {},
   P(r, th) { return [this.px + r * this.k * Math.sin(th * D2R), this.py - r * this.k * Math.cos(th * D2R)]; },
-  resize(w, h) {
-    if (w < 40 || h < 40) return;
-    this.w = w; this.h = h; $('mapSvg').setAttribute('viewBox', `0 0 ${w} ${h}`);
-    const padT = 26, padB = 8, padL = 12, padR = 12, foot = 30, mmL = 1840 + 300, mmR = 1324 + 300, mmT = 1840 + 300;
+  resize(w, h) { if (w < 40 || h < 40) return; this.w = w; this.h = h; this.layout(); Auto.fit(); },
+  // 지도 배치. 자동 상태 줄이 보이면 그 줄 아래에서 시작해 겹치지 않게 한다.
+  layout() {
+    const w = this.w, h = this.h, bar = $('autoBar'); if (!w) return;
+    $('mapSvg').setAttribute('viewBox', `0 0 ${w} ${h}`);
+    const padT = bar.offsetHeight ? bar.offsetTop + bar.offsetHeight + 4 : 26, padB = 8, padL = 12, padR = 12, foot = 30, mmL = 1840 + 300, mmR = 1324 + 300, mmT = 1840 + 300;
     const aw = w - padL - padR, ah = h - padT - padB - foot;
     this.k = Math.min(aw / (mmL + mmR), ah / mmT);
     this.fs = clamp(Math.round(10 * this.k / 0.127), 10, 15); this.sw = clamp(5 * this.k / 0.127, 5, 8);   // 글자·팔 굵기는 지도 배율에 비례
     this.px = padL + mmL * this.k + (aw - (mmL + mmR) * this.k) / 2;
     this.py = padT + mmT * this.k + (ah - mmT * this.k) / 2;
-    this.buildStatic(); this.buildDyn(); App.dirty = true;
+    this.buildStatic(); this.buildDyn(); this.drawTable(); this.draw(); App.dirty = true;
   },
   arc(r, a0, a1, sweep) { const [x0, y0] = this.P(r, a0), [x1, y1] = this.P(r, a1), R = r * this.k; return `M${x0} ${y0}A${R} ${R} 0 0 ${sweep} ${x1} ${y1}`; },
   buildStatic() {
-    const g = $('mapStatic'); g.innerHTML = ''; const { min, max } = CFG.A.yaw, rI = CFG.A.reach.min, rO = CFG.A.reach.max;
+    const root = $('mapStatic'); root.innerHTML = '';
+    const g = svg('g', { id: 'padBg' }, root), { min, max } = CFG.A.yaw, rI = CFG.A.reach.min, rO = CFG.A.reach.max;   // padBg: 패드 바탕(자동 중에는 흐리게). 기둥은 그 밖에 둔다.
     const [ax, ay] = this.P(rI, min), [bx, by] = this.P(rO, min), [cx, cy] = this.P(rO, max), [dx, dy] = this.P(rI, max), RO = rO * this.k, RI = rI * this.k;
     svg('path', { d: `M${ax} ${ay}L${bx} ${by}A${RO} ${RO} 0 0 1 ${cx} ${cy}L${dx} ${dy}A${RI} ${RI} 0 0 0 ${ax} ${ay}Z`, fill: 'url(#gFan)', stroke: 'none' }, g);
     for (const r of [1000, 1400]) svg('path', { d: this.arc(r, min, max, 1), fill: 'none', stroke: 'var(--c-map-line)', 'stroke-dasharray': '2 5', opacity: .7 }, g);
@@ -930,13 +1119,13 @@ const MapR = {
     lab('0°', tx, ty - 6, 'middle');
     const [ix, iy] = this.P(rI, (min + max) / 2 - 30); lab('600 mm', ix - 4, iy - 4, 'end');
     const [ox, oy] = this.P(rO, (min + max) / 2 - 40); lab('1840 mm', ox - 6, oy, 'end');
-    svg('circle', { cx: this.px, cy: this.py, r: this.sw * 1.8, fill: 'var(--c-steel-2)', stroke: 'var(--c-steel-3)', 'stroke-width': 2 }, g);
-    lab('기둥', this.px + this.sw * 2.8, this.py + this.fs * 1.6);
+    svg('circle', { id: 'mapPole', cx: this.px, cy: this.py, r: this.sw * 1.8, fill: 'var(--c-steel-2)', stroke: 'var(--c-steel-3)', 'stroke-width': 2 }, root);
+    root.appendChild(lab('기둥', this.px + this.sw * 2.8, this.py + this.fs * 1.6));
   },
   buildDyn() {
     const g = $('mapDyn'); g.innerHTML = ''; const e = this.els;
-    e.hint = svg('circle', { r: 30, fill: 'var(--a-sky-12)', stroke: 'var(--c-sky-2)', 'stroke-width': 1.2, 'stroke-dasharray': '4 4', opacity: .6 }, g);
-    e.arm = svg('line', { x1: this.px, y1: this.py, stroke: 'var(--c-steel)', 'stroke-width': this.sw, 'stroke-linecap': 'round' }, g);
+    e.hint = svg('circle', { id: 'padHint', r: 30, fill: 'var(--a-sky-12)', stroke: 'var(--c-sky-2)', 'stroke-width': 1.2, 'stroke-dasharray': '4 4', opacity: .6 }, g);
+    e.arm = svg('line', { id: 'mapArm', x1: this.px, y1: this.py, stroke: 'var(--c-steel)', 'stroke-width': this.sw, 'stroke-linecap': 'round' }, g);
     e.canG = svg('g', {}, g);
     svg('rect', { x: -CAN.w * this.k / 2, y: -CAN.h * this.k / 2, width: CAN.w * this.k, height: CAN.h * this.k, rx: 8, fill: 'var(--c-sky)', 'fill-opacity': .9, stroke: 'var(--c-sky-3)', 'stroke-width': 1.5 }, e.canG);
     svg('line', { x1: -CAN.w * this.k / 4, y1: -CAN.h * this.k / 2 + 4, x2: CAN.w * this.k / 4, y2: -CAN.h * this.k / 2 + 4, stroke: 'var(--c-sky-4)', 'stroke-width': 2, 'stroke-linecap': 'round' }, e.canG);
@@ -947,11 +1136,21 @@ const MapR = {
     e.knobGlow = svg('circle', { r: 16, fill: 'var(--c-sky-2)', opacity: .5, filter: 'url(#fGlow)' }, kn);
     e.knob = svg('circle', { r: 13, fill: 'url(#gKnob)', stroke: 'var(--c-sky-2)', 'stroke-width': 2 }, kn);
   },
+  // 테이블 자리(`table` 조회값: 기둥 기준 거리 mm, 요와 같은 각도계의 방향): 점으로만 표시한다.
+  drawTable() {
+    const g = $('mapTable'), t = App.st.table; g.innerHTML = ''; this.els.table = null; if (!t || !this.w) return;
+    const [x, y] = this.P(t.dist, t.bearing), r = this.sw * 3;
+    svg('circle', { cx: x, cy: y, r, fill: 'none', stroke: 'var(--c-amber-2)', 'stroke-width': 1.5, 'stroke-dasharray': '4 3' }, g);
+    svg('circle', { id: 'tableDot', cx: x, cy: y, r: this.sw * .6, fill: 'var(--c-amber-2)' }, g);
+    const e = svg('text', { x, y: y + r + this.fs, 'font-size': this.fs, fill: 'var(--c-amber-2)', 'text-anchor': 'middle', stroke: 'var(--c-panel)', 'stroke-width': 3, 'paint-order': 'stroke' }, g); e.textContent = '테이블';
+    this.els.table = { y, r, lab: e }; App.dirty = true;
+  },
   draw() {
     const e = this.els; if (!e.arm) return;
     const st = App.st, d = App.disp, r = clamp(d.reach, CFG.A.reach.min, CFG.A.reach.max), [tx, ty] = this.P(r, d.yaw);
     e.arm.setAttribute('x2', tx); e.arm.setAttribute('y2', ty);
     e.canG.setAttribute('transform', `translate(${tx} ${ty}) rotate(${CFG.CANOPY_YAW_SIGN * d.yaw + d.canopy})`);
+    if (e.table) e.table.lab.setAttribute('y', ty < e.table.y ? e.table.y + e.table.r + this.fs : e.table.y - e.table.r - 4);   // 테이블 이름표는 캐노피 반대쪽에 둔다
     const active = Holds.active === pad;
     e.hint.setAttribute('cx', tx); e.hint.setAttribute('cy', ty); e.hint.style.display = App.canJog() && !active ? '' : 'none';
     const atMin = st.homed[0] && st.pos.yaw <= CFG.A.yaw.min + 0.05, atMax = st.homed[0] && st.pos.yaw >= CFG.A.yaw.max - 0.05;
@@ -1020,6 +1219,7 @@ const DialR = {
 };
 
 const UI = {
+  autoLine: '',
   update() {
     const st = App.st, on = st.conn === 'on', jog = App.canJog();
     const pill = $('statePill'); pill.dataset.s = on ? st.state : 'OFF'; pill.textContent = STATE_KO[on ? st.state : 'OFF'] || st.state;
@@ -1028,6 +1228,15 @@ const UI = {
     $('connText').textContent = st.conn === 'connecting' ? '연결 중…' : on ? (stale ? st.devName + ' 신호 없음' : st.devName + ' 연결됨') : '기기 연결';
     CFG.AXES.forEach((a, i) => { const c = $('chip' + a[0].toUpperCase() + a.slice(1)); c.lastElementChild.textContent = on ? f1(st.pos[a]) + CFG.A[a].unit : '—'; c.classList.toggle('run', on && !!st.run[i]); c.classList.toggle('unh', on && !st.homed[i]); });
     $('gearBtn').classList.toggle('todo', on && st.state === 'UNHOMED');
+    const autoOn = on && st.auto.on, sw = $('autoBtn');
+    sw.disabled = !(on && st.state === 'READY'); sw.setAttribute('aria-checked', String(autoOn));
+    for (const id of ['mapCard', 'dialCard', 'liftCard']) $(id).classList.toggle('auto', autoOn);
+    $('mapHint').textContent = autoOn ? '자동 중 · 손대면 자동 꺼짐' : '끄는 동안 그 방향으로 이동 · 떼면 정지';
+    const line = autoOn ? Auto.text(st.auto) : '';
+    if (line !== this.autoLine) {
+      const bar = $('autoBar'), was = bar.classList.contains('show'); this.autoLine = line; $('autoLine').textContent = line; bar.classList.toggle('show', autoOn); Auto.fit();
+      if (was !== autoOn) MapR.layout();           // 상태 줄이 생기거나 사라지면 지도를 그 아래로 다시 배치한다
+    }
     $('mapSvg').classList.toggle('on', jog); $('dialSvg').classList.toggle('on', jog);
     $('mapCard').classList.toggle('off', on && !jog); $('dialCard').classList.toggle('off', on && !jog); $('liftCard').classList.toggle('off', on && !jog);
     document.querySelectorAll('.hold').forEach(b => { b.disabled = !jog; });
@@ -1084,7 +1293,7 @@ const Panels = {
       const inp = document.createElement('input'); inp.type = 'number'; inp.step = '0.1'; inp.inputMode = 'decimal'; inp.id = 'mv-in-' + a;
       inp.placeholder = c.verified ? `${c.min} ~ ${c.max} ${c.unit}` : '범위 미검증 — 펌웨어가 move를 거부'; inp.min = c.min; inp.max = c.max;
       const b = el('button', 'btn btn-sm btn-primary', '이동'); b.type = 'button'; b.id = 'mv-btn-' + a;
-      b.addEventListener('click', () => { const v = parseFloat(inp.value); if (!isFinite(v)) return App.toast('숫자를 입력하세요', true); if (v < c.min || v > c.max) return App.toast(`범위는 ${c.min} ~ ${c.max} ${c.unit}`, true); App.send(`move ${a} ${Math.round(v * 10) / 10}`); });
+      b.addEventListener('click', () => { const v = parseFloat(inp.value); if (!isFinite(v)) return App.toast('숫자를 입력하세요', true); if (v < c.min || v > c.max) return App.toast(`범위는 ${c.min} ~ ${c.max} ${c.unit}`, true); App.send(`move ${a} ${r1(v)}`); });
       g.append(el('span', 'lab', c.label), cur, inp, b);
     }
     g.appendChild(el('div', 'note', 'move는 READY에서만, 그 축의 최대속도로 움직입니다. 진행 중에는 STOP으로 멈춥니다. 접기(lift)는 범위가 검증되지 않아 펌웨어가 거부합니다.'));
@@ -1105,7 +1314,10 @@ const Panels = {
     const step = (id, done, cur) => { const e = $(id); e.classList.toggle('done', !!done); e.classList.toggle('cur', !!cur); };
     const h = st.homed; step('st-time', tDone, on && !tDone); step('st-yaw', on && h[0], tDone && !h[0]); step('st-reach', on && h[1], h[0] && !h[1]); step('st-canopy', on && h[2], h[1] && !h[2]); step('st-lift', on && h[3], h[2] && !h[3]);
     CFG.AXES.forEach((a, i) => { $('mv-cur-' + a).textContent = on ? f1(st.pos[a]) + ' ' + CFG.A[a].unit : '—'; const ok = on && st.state === 'READY' && CFG.A[a].verified && h[i]; $('mv-in-' + a).disabled = !ok; $('mv-btn-' + a).disabled = !ok; });
-    if (App.mockMode) { const m = window.__mock.state(); $('mockState').textContent = `mock: ${m.state} faults=${m.faults} phase=${m.phase} hold=${m.hold.on ? f1(m.hold.target) : 'off'} jogvMask=${m.jogvMask} ` + CFG.AXES.map(a => `${a}=${f1(m.pos[a])}${m.running[a] ? '*' : ''}`).join(' '); }
+    $('siteCur').textContent = on && st.site != null ? f1(st.site) + '°' : '—';
+    $('tableCur').textContent = on && st.table ? `${f1(st.table.dist)} mm · ${f1(st.table.bearing)}°` : '—';
+    for (const id of ['siteIn', 'siteBtn', 'tableDistIn', 'tableBearIn', 'tableBtn']) $(id).disabled = !on;
+    if (App.mockMode) { const m = window.__mock.state(); $('mockState').textContent = `mock: ${m.state} faults=${m.faults} phase=${m.phase} hold=${m.hold.on ? f1(m.hold.target) : 'off'} jogvMask=${m.jogvMask} auto=${m.auto.field} ` + CFG.AXES.map(a => `${a}=${f1(m.pos[a])}${m.running[a] ? '*' : ''}`).join(' '); }
   },
   log() {
     if (!$('sheet').classList.contains('show') || this.pane !== 'raw') return;
@@ -1144,13 +1356,16 @@ async function connect() {
   try { await t.open(); } catch (e) { link.transport = null; link.setState('off'); App.toast('연결 실패: ' + (e.message || e), true); return; }
   st.devName = t.name; st.firstS = true; st.lastS = now(); st.state = 'UNHOMED'; st.timeSrc = '—'; st.recoverNote = '';
   link.setState('on');
-  App.send('status');
+  App.send('status'); App.send('site'); App.send('table');      // 설치 방위와 테이블 자리는 기기에 저장된 값을 조회한다
 }
 link.onLine = l => App.onLine(l);
 link.onTx = l => App.addLog('tx', l);
 link.onState = s => {
   const st = App.st;
-  if (s === 'off') { if (st.conn === 'on') App.toast('연결이 끊겼습니다'); st.conn = 'off'; st.state = 'OFF'; st.hold = { on: false, deg: 0 }; st.holdKnown = false; Chold.clear(); Holds.release(); stopHb(); }
+  if (s === 'off') {
+    if (st.conn === 'on') App.toast('연결이 끊겼습니다'); st.conn = 'off'; st.state = 'OFF'; st.hold = { on: false, deg: 0 }; st.holdKnown = false; Chold.clear(); Holds.release(); stopHb();
+    st.auto = { ...st.auto, on: false }; st.site = null; st.table = null; Auto.sent.length = 0; MapR.drawTable();   // 기기의 자동은 그대로 돈다. 앱은 표시만 지운다.
+  }
   else if (s === 'on') { st.conn = 'on'; startHb(); }
   else st.conn = s;
   App.dirty = true; UI.update();
@@ -1177,6 +1392,17 @@ function init() {
   $('connBtn').addEventListener('click', () => { if (st.conn === 'on') Panels.open(true); else connect(); });
   $('connectBig').addEventListener('click', () => connect());
   $('resetBtn').addEventListener('click', () => App.send('reset'));
+  $('autoBtn').addEventListener('click', () => Auto.request(!st.auto.on));
+  $('siteBtn').addEventListener('click', () => {
+    const v = parseFloat($('siteIn').value), [lo, hi] = CFG.AUTO.AZ;
+    if (!(v >= lo && v <= hi)) return App.toast(`설치 방위는 ${lo} ~ ${hi}°`, true);
+    if (App.send('site az ' + r1(v))) { App.send('site'); $('siteIn').value = ''; }                    // 저장 뒤 다시 조회해 기기에 든 값을 표시한다
+  });
+  $('tableBtn').addEventListener('click', () => {
+    const d = parseFloat($('tableDistIn').value), b = parseFloat($('tableBearIn').value), [lo, hi] = CFG.AUTO.DIST, B = CFG.AUTO.BEAR;
+    if (!(d >= lo && d <= hi) || !(Math.abs(b) <= B)) return App.toast(`테이블은 거리 ${lo} ~ ${hi} mm, 방향 −${B} ~ ${B}°`, true);
+    if (App.send(`table ${r1(d)} ${r1(b)}`)) { App.send('table'); $('tableDistIn').value = ''; $('tableBearIn').value = ''; }
+  });
   $('timeBtn').addEventListener('click', () => { App.send('time ' + isoUtc()); setTimeout(() => App.send('status'), 300); });
   $('homeBtn').addEventListener('click', () => App.send('home yaw'));
   $('zeroReach').addEventListener('click', () => App.send('zero reach')); $('zeroCanopy').addEventListener('click', () => App.send('zero canopy')); $('zeroLift').addEventListener('click', () => App.send('zero lift'));
