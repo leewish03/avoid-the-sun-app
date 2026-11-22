@@ -370,10 +370,10 @@ header{grid-column:1/-1;grid-row:1;display:flex;align-items:center;gap:var(--s-3
 const CFG = {
   AXES: ['yaw', 'reach', 'canopy', 'lift'],
   A: {
-    yaw:    { label: '요',     unit: '°',  min: -89,  max: 46,   vmax: 5,  jog: 2,  home: -95, spu: 1600 * 200 / 360, verified: true,  hasHome: true  },
-    reach:  { label: '뻗기',   unit: 'mm', min: 600,  max: 1840, vmax: 63, jog: 10, home: 600, spu: 1600 / 40,  verified: true,  hasHome: false },
-    canopy: { label: '캐노피', unit: '°',  min: -180, max: 180,  vmax: 6,  jog: 3,  home: 0,   spu: 1600 * 22.5 / 360, verified: true,  hasHome: false },
-    lift:   { label: '접기',   unit: 'mm', min: 0,    max: 0,    vmax: 3,  jog: 3,  home: 0,   spu: 1600 * 5 / 2, verified: false, hasHome: false },
+    yaw:    { label: '요',     unit: '°',  min: -89,  max: 46,   vmax: 0.5, jog: 0.5, home: -95, spu: 1600 * 4.8 / 360, verified: true,  hasHome: true  },
+    reach:  { label: '뻗기',   unit: 'mm', min: 600,  max: 1840, vmax: 20, jog: 10, home: 600, spu: 1600 / 64,  verified: true,  hasHome: false },
+    canopy: { label: '캐노피', unit: '°',  min: -180, max: 180,  vmax: 1,  jog: 1,  home: 0,   spu: 1600 * 2.8125 / 360, verified: true,  hasHome: false },
+    lift:   { label: '접기',   unit: 'mm', min: 0,    max: 0,    vmax: 3,  jog: 3,  home: 0,   spu: 1600 / 1.5, verified: false, hasHome: false },
   },
   LIFT_JOGV_SCALE: 0.25, JOGV_WINDOW_S: 0.5, JOGV_EXPIRY_MS: 300, DEADZONE: 0.1, LINK_SILENCE_MS: 1000, LINE_MAX: 95,
   CANOPY_YAW_SIGN: 1, STATUS_MS: 100, TICK_MS: 100, HB_MS: 200, PAD_R: 60, DIAL_FULL_DPS: 60, CHUNK: 20,
