@@ -1,0 +1,1209 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0f1419">
+<meta name="mobile-web-app-capable" content="yes">
+<title>캐노피 조종</title>
+<style>
+/* ---------- 디자인 토큰 (app/mockups/a_landscape.html 팔레트 기반) ---------- */
+:root{
+  --c-bg:#0f1419; --c-bg-2:#0b1016;
+  --c-panel:#171e26; --c-panel-2:#1b2530; --c-line:#26313d; --c-line-2:#33414f;
+  --c-text:#e6edf3; --c-mute:#8b98a5; --c-mute-2:#5c7a94;
+  --c-sky:#4dabf7; --c-sky-2:#74c0fc; --c-sky-3:#a5d8ff; --c-sky-4:#e7f5ff;
+  --c-amber:#ffb020; --c-amber-2:#ffd43b;
+  --c-ok:#37b24d; --c-ok-2:#69db7c;
+  --c-stop:#f03e3e; --c-stop-2:#ff6b6b; --c-stop-3:#c92a2a;
+  --c-map-1:#1e3a52; --c-map-2:#14212d; --c-map-line:#2f4a62;
+  --c-steel:#adb5bd; --c-steel-2:#868e96; --c-steel-3:#ced4da;
+  --c-btn:#212b36; --c-btn-2:#2a3745;
+  --a-ok-15:color-mix(in srgb,var(--c-ok) 15%,transparent);
+  --a-ok-50:color-mix(in srgb,var(--c-ok) 50%,transparent);
+  --a-sky-12:color-mix(in srgb,var(--c-sky-2) 12%,transparent);
+  --a-sky-35:color-mix(in srgb,var(--c-sky-2) 35%,transparent);
+  --a-amber-15:color-mix(in srgb,var(--c-amber) 15%,transparent);
+  --a-amber-50:color-mix(in srgb,var(--c-amber) 50%,transparent);
+  --a-stop-15:color-mix(in srgb,var(--c-stop) 15%,transparent);
+  --a-stop-45:color-mix(in srgb,var(--c-stop) 45%,transparent);
+  --a-black-35:rgba(0,0,0,.35); --a-black-60:rgba(0,0,0,.6);
+  --s-1:.25rem; --s-2:.5rem; --s-3:.75rem; --s-4:1rem; --s-5:1.5rem;
+  --t-xs:.625rem; --t-sm:.6875rem; --t-md:.75rem; --t-base:.8125rem; --t-lg:1rem; --t-xl:1.25rem; --t-2xl:1.625rem;
+  --r-sm:.5rem; --r-md:.625rem; --r-lg:1rem; --r-xl:1.125rem; --r-pill:999px;
+  --w-side:12.25rem; --w-stop:8rem; --h-head:2.375rem; --h-hint:2.5rem;
+  --font:'Pretendard Variable','Pretendard','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR','Noto Sans CJK KR',system-ui,sans-serif;
+  --mono:'Cascadia Code','JetBrains Mono','D2Coding',Consolas,ui-monospace,monospace;
+  --dur:.18s; --ease:cubic-bezier(.2,.8,.2,1);
+}
+/* 기준 844x390에서 1rem = 16px. 화면이 커지면 비례 확대(최대 1.5배), 작아지면 축소(최소 11px). */
+html{font-size:clamp(11px,min(1.8957vw,4.1026vh),24px)}
+@media (orientation:portrait){html{font-size:clamp(11px,min(1.8957vh,4.1026vw),24px)}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--c-bg);color:var(--c-text);font-family:var(--font);overflow:hidden;overscroll-behavior:none}
+body{position:fixed;inset:0;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;touch-action:manipulation}
+button:disabled{cursor:default}
+input,select{font:inherit;color:var(--c-text);background:var(--c-bg-2);border:1px solid var(--c-line-2);border-radius:var(--r-sm);padding:var(--s-1) var(--s-2);min-width:0}
+input:focus,select:focus{outline:2px solid var(--a-sky-35);outline-offset:0}
+svg text{font-family:var(--font)}
+.num{font-variant-numeric:tabular-nums}
+.mute{color:var(--c-mute)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ---------- 앱 루트 ---------- */
+#app{position:absolute;left:0;top:0;width:100vw;height:100vh;height:100dvh;display:grid;
+  grid-template-columns:minmax(0,1fr) var(--w-side) var(--w-stop);grid-template-rows:var(--h-head) minmax(0,1fr);
+  gap:var(--s-2);padding:var(--s-2) var(--s-3) var(--s-3);
+  padding-left:max(var(--s-3),env(safe-area-inset-left));padding-right:max(var(--s-3),env(safe-area-inset-right));
+  background:radial-gradient(120% 90% at 30% 110%,#13202c 0%,var(--c-bg) 55%),var(--c-bg);overflow:hidden;transform-origin:0 0}
+@media (orientation:portrait){
+  body.hint{--hint-h:var(--h-hint)}
+  #app{width:calc(100vh - var(--hint-h,0px));width:calc(100dvh - var(--hint-h,0px));height:100vw;transform:translateY(var(--hint-h,0px)) rotate(90deg) translateY(-100%)}
+}
+
+/* ---------- 헤더 ---------- */
+header{grid-column:1/-1;grid-row:1;display:flex;align-items:center;gap:var(--s-3);padding:0 var(--s-1);min-width:0}
+.state{display:inline-flex;align-items:center;gap:.4em;border-radius:var(--r-pill);padding:.2em .85em;font-weight:700;font-size:var(--t-base);border:1px solid var(--c-line-2);background:var(--c-panel);color:var(--c-mute);white-space:nowrap;transition:background var(--dur),color var(--dur),border-color var(--dur)}
+.state::before{content:'';width:.55em;height:.55em;border-radius:50%;background:currentColor}
+.state[data-s=READY]{background:var(--a-ok-15);color:var(--c-ok-2);border-color:var(--a-ok-50)}
+.state[data-s=HOMING]{background:var(--a-sky-12);color:var(--c-sky-2);border-color:var(--a-sky-35)}
+.state[data-s=HOMING]::before{animation:blink 1s infinite}
+.state[data-s=FAULT]{background:var(--a-stop-15);color:var(--c-stop-2);border-color:var(--a-stop-45)}
+.state[data-s=UNHOMED]{background:var(--a-amber-15);color:var(--c-amber);border-color:var(--a-amber-50)}
+.conn{display:inline-flex;align-items:center;gap:.4em;font-size:var(--t-md);color:var(--c-mute);border-radius:var(--r-pill);padding:.2em .6em;white-space:nowrap;transition:color var(--dur)}
+.conn i{width:.5em;height:.5em;border-radius:50%;background:var(--c-steel-2);position:relative;flex:none}
+.conn[data-c=on]{color:var(--c-ok-2)}.conn[data-c=on] i{background:var(--c-ok)}
+.conn[data-c=on] i::after{content:'';position:absolute;inset:-.35em;border-radius:50%;background:var(--c-ok);filter:blur(.3em);opacity:.6}
+.conn[data-c=stale]{color:var(--c-amber)}.conn[data-c=stale] i{background:var(--c-amber)}
+.conn[data-c=connecting] i{background:var(--c-sky);animation:blink .8s infinite}
+.conn:not(:disabled):hover{background:var(--c-panel)}
+.chips{margin-left:auto;display:flex;gap:.4rem;min-width:0;overflow:hidden}
+.chip{background:var(--c-panel);border:1px solid var(--c-line);border-radius:var(--r-sm);padding:.2em .6em;font-size:var(--t-sm);color:var(--c-mute);white-space:nowrap;transition:border-color var(--dur)}
+.chip b{color:var(--c-text);font-size:var(--t-base);margin-left:.3em}
+.chip.run{border-color:var(--a-sky-35)}.chip.run b{color:var(--c-sky-3)}
+.chip.unh b{color:var(--c-mute)}
+.gear{color:var(--c-mute);font-size:var(--t-md);border:1px solid var(--c-line);border-radius:var(--r-sm);padding:.25em .65em;white-space:nowrap;position:relative;transition:background var(--dur),color var(--dur)}
+.gear:hover{background:var(--c-panel);color:var(--c-text)}
+.gear.todo::after{content:'';position:absolute;right:-.25em;top:-.25em;width:.6em;height:.6em;border-radius:50%;background:var(--c-amber);border:2px solid var(--c-bg)}
+.mockbadge{font-size:var(--t-xs);font-weight:800;letter-spacing:.08em;color:var(--c-bg);background:var(--c-amber);border-radius:var(--r-sm);padding:.15em .45em}
+
+/* ---------- 카드 공통 ---------- */
+.card{background:var(--c-panel);border:1px solid var(--c-line);border-radius:var(--r-lg);position:relative;overflow:hidden;min-height:0;min-width:0;animation:reveal .5s var(--ease) both}
+.card .title{position:absolute;left:var(--s-3);top:.55rem;font-size:var(--t-md);font-weight:700;letter-spacing:.01em;z-index:2;pointer-events:none}
+.card .hint{position:absolute;right:var(--s-3);top:.55rem;font-size:var(--t-sm);color:var(--c-mute);z-index:2;pointer-events:none;white-space:nowrap}
+.card.off{opacity:.55}
+#mapCard{grid-column:1;grid-row:2;animation-delay:.05s}
+.side{grid-column:2;grid-row:2;display:grid;grid-template-rows:minmax(0,1fr) auto;gap:var(--s-2);min-height:0}
+#dialCard{animation-delay:.12s}#liftCard{animation-delay:.18s}
+
+/* ---------- 위치 패드(지도) ---------- */
+#mapSvg{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+#mapSvg.on{cursor:crosshair}
+.mapReadout{position:absolute;left:var(--s-3);bottom:var(--s-2);display:grid;grid-template-columns:auto 4.5rem auto;gap:.15em .5em;align-items:center;font-size:var(--t-sm);color:var(--c-mute);opacity:0;transition:opacity var(--dur);pointer-events:none;z-index:2}
+.mapReadout.show{opacity:1}
+.mapReadout b{color:var(--c-sky-3);font-size:var(--t-md);min-width:2.6em;text-align:right}
+.bar{position:relative;height:.35rem;background:var(--c-line);border-radius:var(--r-pill);overflow:hidden}
+.bar i{position:absolute;top:0;bottom:0;left:50%;width:0;background:var(--c-sky-2);border-radius:var(--r-pill)}
+.bar i.neg{transform:translateX(-100%)}
+.badge{position:absolute;right:var(--s-3);bottom:var(--s-2);font-size:var(--t-xs);color:var(--c-amber);background:var(--a-amber-15);border:1px solid var(--a-amber-50);border-radius:var(--r-pill);padding:.15em .6em;z-index:2;pointer-events:none;display:none}
+.badge.show{display:block}
+.overlay{position:absolute;inset:0;z-index:5;display:none;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-3);background:color-mix(in srgb,var(--c-panel) 72%,transparent);backdrop-filter:blur(3px);text-align:center;padding:var(--s-4)}
+.overlay.show{display:flex}
+.overlay p{margin:0;font-size:var(--t-md);color:var(--c-mute);max-width:26rem;line-height:1.5}
+.overlay a{color:var(--c-sky-2)}
+
+/* ---------- 버튼 ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.35em;border-radius:var(--r-md);background:var(--c-btn);border:1px solid var(--c-line-2);padding:.5em 1em;font-weight:700;font-size:var(--t-base);color:var(--c-text);white-space:nowrap;transition:background var(--dur),transform var(--dur),border-color var(--dur),opacity var(--dur)}
+.btn:not(:disabled):hover{background:var(--c-btn-2)}
+.btn:not(:disabled):active,.btn.held{background:var(--c-sky);border-color:var(--c-sky-3);color:var(--c-bg);transform:scale(.97)}
+.btn:disabled{opacity:.4}
+.btn-primary{background:var(--c-sky);border-color:var(--c-sky-3);color:var(--c-bg)}
+.btn-primary:not(:disabled):hover{background:var(--c-sky-2)}
+.btn-ghost{background:transparent}
+.btn-danger{background:var(--a-stop-15);border-color:var(--a-stop-45);color:var(--c-stop-2)}
+.btn-danger:not(:disabled):active{background:var(--c-stop);color:#fff}
+.btn-lg{font-size:var(--t-lg);padding:.6em 1.4em;border-radius:var(--r-lg)}
+.btn-sm{font-size:var(--t-sm);padding:.3em .7em}
+.hold{touch-action:none;-webkit-user-select:none;user-select:none}
+
+/* ---------- 캐노피 다이얼 ---------- */
+#dialWrap{position:absolute;inset:1.7rem .5rem 1.55rem;display:flex;align-items:center;justify-content:center}
+#dialSvg{width:100%;height:100%;touch-action:none;display:block}
+#dialSvg.on{cursor:grab}#dialSvg.on.held{cursor:grabbing}
+.dialMode{position:absolute;left:0;right:0;bottom:.45rem;text-align:center;font-size:var(--t-xs);color:var(--c-mute);pointer-events:none}
+.dialMode b{display:inline-block;border-radius:var(--r-pill);padding:.1em .6em;font-weight:600}
+.dialMode[data-m=hold] b{color:var(--c-amber);background:var(--a-amber-15)}
+.dialMode[data-m=ready] b{color:var(--c-sky-3);background:var(--a-sky-12)}
+.dialMode[data-m=joint] b{color:var(--c-amber);background:var(--a-amber-15)}
+.dialMode[data-m=lock] b{color:var(--c-mute);background:var(--c-line)}
+
+/* ---------- 접기 ---------- */
+#liftCard{padding:1.75rem var(--s-2) var(--s-2)}
+.liftRow{display:flex;gap:var(--s-2)}
+.liftRow .btn{flex:1;height:2.75rem;font-size:var(--t-base)}
+
+/* ---------- STOP ---------- */
+#stop{grid-column:3;grid-row:2;position:relative;border-radius:var(--r-xl);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4em;font-weight:900;font-size:var(--t-2xl);letter-spacing:.08em;color:#fff;
+  background:radial-gradient(circle at 50% 35%,var(--c-stop-2),var(--c-stop) 60%,var(--c-stop-3));border-bottom:.25rem solid var(--a-black-35);transition:transform .08s,filter .08s;animation:reveal .5s var(--ease) both;animation-delay:.24s;z-index:3}
+#stop::before{content:'';position:absolute;inset:8% -10% -4%;border-radius:50%;background:var(--c-stop);filter:blur(1.1rem);opacity:.4;z-index:-1}
+#stop small{font-size:var(--t-xs);font-weight:600;letter-spacing:0;opacity:.9}
+#stop:active,#stop.held{transform:scale(.97);filter:brightness(.85)}
+#stop.sent{filter:brightness(1.15)}
+
+/* ---------- FAULT 패널 ---------- */
+#fault{grid-column:1/3;grid-row:2;z-index:6;display:none;flex-direction:column;gap:var(--s-3);border-radius:var(--r-lg);padding:var(--s-4) var(--s-5);
+  background:linear-gradient(160deg,#3a0f14,#5a1218 60%,#4a0f14);border:1px solid var(--c-stop);color:#fff;overflow:auto}
+#fault.show{display:flex}
+#fault h2{margin:0;font-size:var(--t-xl);display:flex;align-items:center;gap:.5em}
+#fault h2 span{font-size:var(--t-sm);font-weight:600;opacity:.8;letter-spacing:.1em}
+.faultList{display:flex;flex-direction:column;gap:.35em;font-size:var(--t-base)}
+.faultList li{list-style:none;display:flex;gap:.6em;align-items:baseline}
+.faultList code{font-family:var(--mono);font-size:var(--t-sm);background:var(--a-black-35);border-radius:var(--r-sm);padding:.1em .5em;flex:none}
+.faultSteps{display:grid;grid-template-columns:1fr 1fr;gap:var(--s-3);margin-top:var(--s-2)}
+.faultStep{background:var(--a-black-35);border-radius:var(--r-md);padding:var(--s-3);display:flex;flex-direction:column;gap:.5em}
+.faultStep h3{margin:0;font-size:var(--t-md);opacity:.85}
+.faultStep .row{display:flex;gap:var(--s-2);flex-wrap:wrap}
+.faultStep p{margin:0;font-size:var(--t-sm);opacity:.8;line-height:1.45}
+#fault .btn{background:var(--a-black-35);border-color:rgba(255,255,255,.25);color:#fff}
+#fault .btn-primary{background:#fff;color:var(--c-stop-3);border-color:#fff}
+
+/* ---------- ⚙ 세부 시트 ---------- */
+#sheet{position:absolute;inset:0;z-index:20;display:none;grid-template-rows:auto 1fr;background:color-mix(in srgb,var(--c-bg) 92%,transparent);backdrop-filter:blur(6px);padding:var(--s-2) var(--s-3) var(--s-3);gap:var(--s-2)}
+#sheet.show{display:grid}
+.sheetHead{display:flex;align-items:center;gap:var(--s-2)}
+.sheetHead h2{margin:0;font-size:var(--t-lg)}
+.tabs{display:flex;gap:.3rem;margin-left:var(--s-2)}
+.tab{border-radius:var(--r-pill);padding:.3em .9em;font-size:var(--t-md);color:var(--c-mute);border:1px solid transparent}
+.tab[aria-selected=true]{color:var(--c-text);background:var(--c-panel);border-color:var(--c-line-2)}
+.sheetHead .spacer{flex:1}
+.pane{display:none;min-height:0;overflow:auto;background:var(--c-panel);border:1px solid var(--c-line);border-radius:var(--r-lg);padding:var(--s-3)}
+.pane.show{display:block}
+.wiz{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--s-2);height:100%}
+.step{background:var(--c-bg-2);border:1px solid var(--c-line);border-radius:var(--r-md);padding:var(--s-2) var(--s-3);display:flex;flex-direction:column;gap:.45em;min-width:0;transition:border-color var(--dur)}
+.step.done{border-color:var(--a-ok-50)}.step.cur{border-color:var(--a-sky-35)}
+.step h3{margin:0;font-size:var(--t-md);display:flex;align-items:center;gap:.4em}
+.step h3 i{width:1.3em;height:1.3em;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:var(--t-xs);background:var(--c-line);color:var(--c-text);flex:none}
+.step.done h3 i{background:var(--c-ok);color:#fff}
+.step p{margin:0;font-size:var(--t-sm);color:var(--c-mute);line-height:1.45}
+.step .v{font-size:var(--t-md);color:var(--c-sky-3)}
+.step .row{display:flex;gap:.3rem;margin-top:var(--s-1);flex-wrap:wrap}
+.step .row .btn{flex:1 1 40%;padding:.45em .5em;font-size:var(--t-sm)}
+.step .row .btn-primary{flex-basis:100%}
+.moveGrid{display:grid;grid-template-columns:auto auto 1fr auto;gap:var(--s-2) var(--s-3);align-items:center;font-size:var(--t-base)}
+.moveGrid .lab{font-weight:700}.moveGrid .cur{color:var(--c-sky-3)}
+.moveGrid input{width:100%}
+.moveGrid .note{grid-column:1/-1;font-size:var(--t-sm);color:var(--c-mute)}
+.rawPane{display:grid;grid-template-rows:auto 1fr;gap:var(--s-2);height:100%}
+.rawRow{display:flex;gap:var(--s-2);align-items:center;flex-wrap:wrap}
+.rawRow input{flex:1;font-family:var(--mono);min-width:10rem}
+.log{font-family:var(--mono);font-size:var(--t-sm);line-height:1.4;background:var(--c-bg-2);border:1px solid var(--c-line);border-radius:var(--r-md);padding:var(--s-2);overflow:auto;white-space:pre-wrap;word-break:break-all;min-height:0;color:var(--c-mute)}
+.log .tx{color:var(--c-sky-3)}.log .rx{color:var(--c-text)}.log .err{color:var(--c-stop-2)}.log .info{color:var(--c-amber)}
+.mockPane{display:flex;flex-direction:column;gap:var(--s-3)}
+.mockPane .row{display:flex;gap:var(--s-2);flex-wrap:wrap;align-items:center}
+.mockPane h3{margin:0;font-size:var(--t-md);color:var(--c-mute)}
+.kv{font-family:var(--mono);font-size:var(--t-sm);color:var(--c-mute)}
+
+/* ---------- 토스트 / 회전 안내 ---------- */
+#toast{position:absolute;left:50%;top:3rem;transform:translate(-50%,-.5rem);z-index:30;background:var(--c-panel-2);border:1px solid var(--c-line-2);border-radius:var(--r-pill);padding:.45em 1em;font-size:var(--t-md);opacity:0;transition:opacity var(--dur),transform var(--dur);pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.err{border-color:var(--a-stop-45);color:var(--c-stop-2)}
+/* 세로 화면 안내 띠: 화면 맨 위에 자리를 따로 잡아 아무것도 가리지 않는다. ✕로 닫으면 앱이 그 자리까지 쓴다. */
+#rotateHint{position:fixed;left:0;right:0;top:0;height:var(--hint-h,0px);z-index:40;display:none;align-items:center;justify-content:center;gap:var(--s-3);background:var(--c-panel-2);border-bottom:1px solid var(--c-line-2);font-size:var(--t-base)}
+@media (orientation:portrait){body.hint #rotateHint{display:flex}}
+
+@keyframes reveal{from{opacity:0;transform:translateY(.6rem)}to{opacity:1;transform:none}}
+@keyframes blink{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+
+<body class="hint">
+<div id="rotateHint"><span>📱 폰을 가로로 돌려 주세요</span><button class="btn btn-sm btn-ghost" id="rotateHintClose" type="button" aria-label="안내 닫기">✕</button></div>
+<div id="app">
+  <header>
+    <span class="state" id="statePill" data-s="OFF">연결 안 됨</span>
+    <button class="conn" id="connBtn" data-c="off" type="button"><i></i><span id="connText">기기 연결</span></button>
+    <span class="mockbadge" id="mockBadge" hidden>MOCK</span>
+    <div class="chips num">
+      <span class="chip" id="chipYaw">요<b>—</b></span>
+      <span class="chip" id="chipReach">뻗기<b>—</b></span>
+      <span class="chip" id="chipCanopy">캐노피<b>—</b></span>
+      <span class="chip" id="chipLift">접기<b>—</b></span>
+    </div>
+    <button class="gear" id="gearBtn" type="button" aria-label="세부 화면 열기">⚙ 세부</button>
+  </header>
+
+  <section class="card" id="mapCard" aria-label="위치 패드">
+    <span class="title">① 위치 패드 · 요 + 뻗기</span><span class="hint">끄는 동안 그 방향으로 이동 · 떼면 정지</span>
+    <svg id="mapSvg" role="application" aria-label="위에서 본 지도. 누른 채 끌면 그 방향으로 캐노피가 이동" preserveAspectRatio="none">
+      <defs>
+        <radialGradient id="gFan" cx="0.5" cy="1" r="1"><stop offset="0" stop-color="#1e3a52"/><stop offset="1" stop-color="#14212d"/></radialGradient>
+        <radialGradient id="gKnob"><stop offset="0" stop-color="#e7f5ff"/><stop offset="1" stop-color="#a5d8ff"/></radialGradient>
+        <filter id="fGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
+        <marker id="mArrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="#74c0fc"/></marker>
+      </defs>
+      <g id="mapStatic"></g>
+      <g id="mapDyn"></g>
+      <g id="mapKnob" style="display:none"></g>
+    </svg>
+    <div class="mapReadout num" id="mapReadout" aria-hidden="true">
+      <span>요</span><span class="bar"><i id="barYaw"></i></span><b id="valYaw">0</b>
+      <span>뻗기</span><span class="bar"><i id="barReach"></i></span><b id="valReach">0</b>
+    </div>
+    <span class="badge" id="mapBadge">원점 전 · 위치 추정</span>
+    <div class="overlay" id="connectOv">
+      <p id="connectMsg">기기와 연결하면 조작할 수 있습니다.</p>
+      <button class="btn btn-primary btn-lg" id="connectBig" type="button">기기 연결</button>
+      <p id="connectSub" class="mute"></p>
+    </div>
+  </section>
+
+  <div class="side">
+    <section class="card" id="dialCard" aria-label="캐노피 회전">
+      <span class="title">② 캐노피 회전</span><span class="hint num" id="dialVal">—</span>
+      <div id="dialWrap">
+        <svg id="dialSvg" viewBox="0 0 200 200" role="application" aria-label="캐노피 다이얼. 누른 채 돌리면 그 방향으로 회전">
+          <g id="dialStatic"></g>
+          <g id="dialDyn"></g>
+        </svg>
+      </div>
+      <div class="dialMode" id="dialMode" data-m="lock"><b>연결 안 됨</b></div>
+    </section>
+    <section class="card" id="liftCard" aria-label="접기">
+      <span class="title">③ 접기</span><span class="hint num" id="liftVal">—</span>
+      <div class="liftRow">
+        <button class="btn hold" id="liftUp" type="button" data-axis="lift" data-s="1">▲ 펴기</button>
+        <button class="btn hold" id="liftDown" type="button" data-axis="lift" data-s="-1">▼ 접기</button>
+      </div>
+    </section>
+  </div>
+
+  <button id="stop" type="button" aria-label="정지">STOP<small id="stopSub">항상 누를 수 있음</small></button>
+
+  <section id="fault" aria-live="assertive">
+    <h2>⚠ 고장 정지 <span>FAULT</span></h2>
+    <ul class="faultList" id="faultList"></ul>
+    <div class="faultSteps">
+      <div class="faultStep">
+        <h3>1. 리밋에서 빼내기 (recover · 1회 소량)</h3>
+        <div class="row" id="recoverRow"></div>
+        <p id="recoverNote"></p>
+      </div>
+      <div class="faultStep">
+        <h3>2. 고장 해제 (reset)</h3>
+        <div class="row"><button class="btn btn-primary" id="resetBtn" type="button">해제 (reset)</button></div>
+        <p id="resetNote">스위치가 풀리고 모든 축이 멈춘 뒤에만 해제됩니다. 해제 후 모든 축은 원점을 다시 잡아야 합니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="sheet" aria-label="세부">
+    <div class="sheetHead">
+      <h2>⚙ 세부</h2>
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" data-pane="wiz" aria-selected="true" type="button">준비</button>
+        <button class="tab" role="tab" data-pane="move" aria-selected="false" type="button">숫자 이동</button>
+        <button class="tab" role="tab" data-pane="raw" aria-selected="false" type="button">명령·로그</button>
+        <button class="tab" role="tab" data-pane="mock" aria-selected="false" type="button" id="mockTab" hidden>모의 기기</button>
+      </div>
+      <span class="spacer"></span>
+      <span class="kv" id="sheetStatus"></span>
+      <button class="btn btn-sm btn-ghost" id="disconnectBtn" type="button">연결 끊기</button>
+      <button class="btn btn-sm" id="sheetClose" type="button">닫기 ✕</button>
+    </div>
+
+    <div class="pane show" id="pane-wiz">
+      <div class="wiz">
+        <div class="step" id="st-time"><h3><i>1</i>시간</h3><p>태양 계산용 UTC 시각. READY 조건은 아닙니다.</p><div class="v" id="timeSrc">—</div>
+          <div class="row"><button class="btn" id="timeBtn" type="button">지금 UTC 보내기</button></div></div>
+        <div class="step" id="st-yaw"><h3><i>2</i>요 원점</h3><p>홀 센서로 요 원점을 잡습니다. 원점은 −95°, 이후 + 방향만 움직일 수 있습니다.</p><div class="v" id="homePhase">IDLE</div>
+          <div class="row"><button class="btn" id="homeBtn" type="button">원점 잡기 (home yaw)</button></div></div>
+        <div class="step" id="st-reach"><h3><i>3</i>뻗기 기준</h3><p>팔을 끝까지 접은 자세(600 mm)로 맞춘 뒤 기준으로 선언합니다.</p><div class="v" id="wReach">—</div>
+          <div class="row"><button class="btn hold" data-axis="reach" data-s="-1" type="button">◀ 접기</button><button class="btn hold" data-axis="reach" data-s="1" type="button">펴기 ▶</button><button class="btn btn-primary" id="zeroReach" type="button">여기가 600 mm</button></div></div>
+        <div class="step" id="st-canopy"><h3><i>4</i>캐노피 기준</h3><p>캐노피를 팔과 나란한 정면(0°)에 맞춘 뒤 기준으로 선언합니다.</p><div class="v" id="wCanopy">—</div>
+          <div class="row"><button class="btn hold" data-axis="canopy" data-s="-1" type="button">⟲</button><button class="btn hold" data-axis="canopy" data-s="1" type="button">⟳</button><button class="btn btn-primary" id="zeroCanopy" type="button">여기가 0°</button></div></div>
+        <div class="step" id="st-lift"><h3><i>5</i>접기 기준</h3><p>기준 자세(0°)로 맞춘 뒤 선언합니다. 범위 미검증 축이라 리밋 스위치만 보호합니다.</p><div class="v" id="wLift">—</div>
+          <div class="row"><button class="btn hold" data-axis="lift" data-s="-1" type="button">▼</button><button class="btn hold" data-axis="lift" data-s="1" type="button">▲</button><button class="btn btn-primary" id="zeroLift" type="button">여기가 0°</button></div></div>
+      </div>
+    </div>
+
+    <div class="pane" id="pane-move">
+      <div class="moveGrid num" id="moveGrid"></div>
+    </div>
+
+    <div class="pane" id="pane-raw">
+      <div class="rawPane">
+        <div class="rawRow">
+          <input id="rawIn" type="text" placeholder="원시 명령 (예: status, move yaw -10)" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <button class="btn btn-primary btn-sm" id="rawSend" type="button">보내기</button>
+          <button class="btn btn-sm" data-cmd="status" type="button">status</button>
+          <button class="btn btn-sm" data-cmd="help" type="button">help</button>
+          <label class="mute" style="font-size:var(--t-sm);display:flex;gap:.3em;align-items:center"><input type="checkbox" id="logPeriodic"> 주기 줄(S·hb·jogv) 표시</label>
+          <button class="btn btn-sm btn-ghost" id="logClear" type="button">지우기</button>
+        </div>
+        <div class="log" id="log" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <div class="pane" id="pane-mock">
+      <div class="mockPane">
+        <h3>상태</h3>
+        <div class="row"><button class="btn btn-primary btn-sm" id="mockReady" type="button">바로 READY로</button><button class="btn btn-sm" id="mockReboot" type="button">재부팅(UNHOMED)</button><button class="btn btn-sm" id="mockDrop" type="button">연결 끊김 흉내</button></div>
+        <h3>고장 주입</h3>
+        <div class="row" id="mockFaults"></div>
+        <div class="row"><button class="btn btn-sm" id="mockRelease" type="button">스위치 수동 해제</button></div>
+        <div class="kv" id="mockState"></div>
+      </div>
+    </div>
+  </section>
+
+  <div id="toast" role="status"></div>
+</div>
+
+<script>
+'use strict';
+(() => {
+/* =====================================================================
+ *  설정 (firmware/include/config.h, firmware/APP_PROTOCOL.md v1.1 기준)
+ * ===================================================================== */
+const CFG = {
+  AXES: ['yaw', 'reach', 'canopy', 'lift'],
+  A: {
+    yaw:    { label: '요',     unit: '°',  min: -89,  max: 46,   vmax: 5,  jog: 2,  home: -95, spu: 9600 / 360, verified: true,  hasHome: true  },
+    reach:  { label: '뻗기',   unit: 'mm', min: 600,  max: 1840, vmax: 40, jog: 10, home: 600, spu: 9600 / 40,  verified: true,  hasHome: false },
+    canopy: { label: '캐노피', unit: '°',  min: -180, max: 180,  vmax: 6,  jog: 3,  home: 0,   spu: 9600 / 360, verified: true,  hasHome: false },
+    lift:   { label: '접기',   unit: '°',  min: 0,    max: 0,    vmax: 90, jog: 30, home: 0,   spu: 9600 / 360, verified: false, hasHome: false },
+  },
+  LIFT_JOGV_SCALE: 0.25, JOGV_WINDOW_S: 0.5, JOGV_EXPIRY_MS: 300, DEADZONE: 0.1, LINK_SILENCE_MS: 1000, LINE_MAX: 95,
+  CANOPY_YAW_SIGN: 1, STATUS_MS: 100, TICK_MS: 100, HB_MS: 200, PAD_R: 60, DIAL_FULL_DPS: 60, CHUNK: 20,
+  BLE: { name: 'AvoidSun', svc: '6e400001-b5a3-f393-e0a9-e50e24dcca9e', rx: '6e400002-b5a3-f393-e0a9-e50e24dcca9e', tx: '6e400003-b5a3-f393-e0a9-e50e24dcca9e' },
+};
+const FAULT_BITS = { ESTOP: 1, 'LIM_YAW+': 2, 'LIM_YAW-': 4, LIM_LIFT: 8, WATCHDOG: 16, HOMING: 32, OVERRUN: 64, CONFIG: 128 };
+const FAULT_KO = {
+  ESTOP: '비상정지 입력이 열렸습니다', 'LIM_YAW+': '요가 + 방향 리밋 스위치에 닿았습니다', 'LIM_YAW-': '요가 − 방향 리밋 스위치에 닿았습니다',
+  LIM_LIFT: '접기 리밋 스위치(위·아래 직렬)가 열렸습니다', WATCHDOG: '워치독으로 재시작되었습니다', HOMING: '요 원점 잡기에 실패했습니다',
+  OVERRUN: '제어 루프가 50 ms를 넘겨 지연되었습니다', CONFIG: '펌웨어 설정 오류 — 개발자 확인 필요 (reset 불가)',
+};
+const ERR_KO = {
+  FAULT_LATCHED: '고장이 걸려 있어 거부됨', BUSY: '다른 동작이 진행 중', NOT_HOMED: '원점이 없어 거부됨', OUT_OF_RANGE: '범위 끝 (더 갈 수 없음)',
+  AUTO_LOCKED: '자동 모드 잠김', NO_HOME_SENSOR_USE_ZERO: '이 축은 home 대신 zero', HAS_HOME_SENSOR_USE_HOME: '요는 zero 대신 home yaw',
+  NOT_FAULTED: '고장 상태가 아님', RECOVERY_NOT_ALLOWED: '그 방향으로는 복구 불가', 'line too long': '줄이 너무 깁니다 (95바이트)',
+};
+const JOGV_ONLY_ERR = ['OUT_OF_RANGE', 'speed must be -1..1', 'unknown axis (yaw|reach|canopy|lift)'];   // chold의 응답일 수 없는 ERR
+const STATE_KO = { OFF: '연결 안 됨', UNHOMED: '원점 필요', HOMING: '원점 잡는 중', READY: '정상 READY', FAULT: '고장 FAULT' };
+
+/* ---------- 유틸 ---------- */
+const $ = id => document.getElementById(id);
+const now = () => performance.now();
+const clamp = (v, lo, hi) => v < lo ? lo : v > hi ? hi : v;
+const f1 = v => { const r = Math.round(v * 10) / 10; return (Object.is(r, -0) || Math.abs(r) < 0.05 ? 0 : r).toFixed(1); };
+const fS = s => String(Math.round(clamp(s, -1, 1) * 100) / 100);
+const D2R = Math.PI / 180;
+const isoUtc = (d = new Date()) => d.toISOString().replace(/\.\d{3}Z$/, 'Z');
+const SVG_NS = 'http://www.w3.org/2000/svg';
+function svg(tag, attrs, parent) {
+  const el = document.createElementNS(SVG_NS, tag);
+  for (const k in attrs) if (attrs[k] != null) el.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(el);
+  return el;
+}
+if (!Array.isArray(window.__sent)) window.__sent = [];
+function logSent(line) {
+  const a = window.__sent;
+  a.push({ t: now(), line });
+  if (a.length > 20000) a.splice(0, a.length - 10000);
+}
+
+/* =====================================================================
+ *  링크: 줄 단위 송수신. 전송체(transport)는 BLE 또는 페이지 내 mock.
+ *  - 보낼 때 20바이트 이하로 나눈다(전송체). 받을 때 \n 기준으로 다시 잇고 \r은 버린다.
+ *  - 큐: stop은 맨 앞, hb는 한 개만, 같은 축의 지난 jogv는 새 것으로 대체한다.
+ *  - window.__sent에는 전송체에 실제로 넘긴 줄만 기록한다.
+ * ===================================================================== */
+const link = {
+  transport: null, state: 'off', queue: [], pumping: false, rxBuf: '', onLine: null, onState: null, onTx: null,
+  attach(t) { this.transport = t; t.onBytes = s => this._rx(s); t.onClose = () => this._closed(); },
+  setState(s) { this.state = s; this.onState && this.onState(s); },
+  send(line) {
+    if (this.state !== 'on' || !this.transport) return false;
+    if (line.length > CFG.LINE_MAX) { App.toast('줄이 95바이트를 넘어 보내지 않음', true); return false; }
+    const q = this.queue;
+    if (line === 'stop') q.unshift(line);
+    else if (line === 'hb') { if (!q.includes('hb')) q.push(line); }
+    else if (line.startsWith('jogv ')) {
+      const key = line.split(' ').slice(0, 2).join(' ') + ' ';
+      for (let i = q.length - 1; i >= 0; i--) if (q[i].startsWith(key)) q.splice(i, 1);
+      q.push(line);
+    } else q.push(line);
+    this._pump();
+    return true;
+  },
+  async _pump() {
+    if (this.pumping) return;
+    this.pumping = true;
+    try {
+      while (this.queue.length && this.state === 'on' && this.transport) {
+        const line = this.queue.shift();
+        logSent(line);
+        this.onTx && this.onTx(line);
+        try { await this.transport.write(line + '\n'); }
+        catch (e) { App.toast('전송 실패: ' + (e.message || e), true); }
+      }
+    } finally { this.pumping = false; }
+  },
+  _rx(text) {
+    this.rxBuf += text;
+    let i;
+    while ((i = this.rxBuf.indexOf('\n')) >= 0) {
+      const l = this.rxBuf.slice(0, i).replace(/\r/g, '');
+      this.rxBuf = this.rxBuf.slice(i + 1);
+      if (l.length && this.onLine) this.onLine(l);
+    }
+    if (this.rxBuf.length > 512) this.rxBuf = '';
+  },
+  _closed() { this.queue.length = 0; this.rxBuf = ''; this.transport = null; this.setState('off'); },
+  async close() { const t = this.transport; this.transport = null; this.queue.length = 0; this.rxBuf = ''; if (t) { try { await t.close(); } catch (e) { /* 이미 끊김 */ } } this.setState('off'); },
+};
+
+/* ---------- Web Bluetooth (Nordic UART Service) ---------- */
+class BleTransport {
+  constructor() { this.dev = null; this.rx = null; this.tx = null; this.onBytes = null; this.onClose = null; this.name = CFG.BLE.name; this.enc = new TextEncoder(); this.dec = new TextDecoder(); this.wnr = false; }
+  async open() {
+    const dev = await navigator.bluetooth.requestDevice({ filters: [{ name: CFG.BLE.name }, { services: [CFG.BLE.svc] }], optionalServices: [CFG.BLE.svc] });
+    this.dev = dev; this.name = dev.name || CFG.BLE.name;
+    dev.addEventListener('gattserverdisconnected', () => { this.onClose && this.onClose(); });
+    const server = await dev.gatt.connect();
+    const service = await server.getPrimaryService(CFG.BLE.svc);
+    this.rx = await service.getCharacteristic(CFG.BLE.rx);
+    this.tx = await service.getCharacteristic(CFG.BLE.tx);
+    this.wnr = !!(this.rx.properties && this.rx.properties.writeWithoutResponse && this.rx.writeValueWithoutResponse);
+    this.tx.addEventListener('characteristicvaluechanged', ev => { this.onBytes && this.onBytes(this.dec.decode(ev.target.value)); });
+    await this.tx.startNotifications();
+  }
+  async write(text) {
+    const b = this.enc.encode(text);
+    for (let i = 0; i < b.length; i += CFG.CHUNK) {
+      const part = b.subarray(i, i + CFG.CHUNK);
+      if (this.wnr) await this.rx.writeValueWithoutResponse(part);
+      else if (this.rx.writeValueWithResponse) await this.rx.writeValueWithResponse(part);
+      else await this.rx.writeValue(part);
+    }
+  }
+  async close() { if (this.dev && this.dev.gatt && this.dev.gatt.connected) this.dev.gatt.disconnect(); }
+}
+
+/* =====================================================================
+ *  mock 기기 (?mock=1): 펌웨어 main.cpp + APP_PROTOCOL.md를 따르는 페이지 내 가짜 ESP32.
+ *  가속 램프는 없고(정속), 그 밖의 허가·목표 계산·만료·고정·링크 감시는 펌웨어 규칙 그대로다.
+ * ===================================================================== */
+class MockDevice {
+  constructor() { this.onBytes = null; this.onClose = null; this.connected = false; this.timer = null; this.name = '모의 기기'; this.boot(); }
+  boot() {
+    this.pos = { yaw: 0, reach: 0, canopy: 0, lift: 0 };
+    this.off = { yaw: -90, lift: 0 };                 // 물리각 = 표시각 + off (홀 센서는 물리 −95°)
+    this.mv = {}; for (const a of CFG.AXES) this.mv[a] = { target: null, speed: 0, dir: 0, kind: '' };
+    this.homed = { yaw: false, reach: false, canopy: false, lift: false };
+    this.faults = 0; this.forced = { estop: false, yawPos: false, yawNeg: false, lift: false };
+    this.homing = { phase: 'IDLE' }; this.hold = { on: false, target: 0, last: null, atLimit: false };
+    this.jogvLast = {}; this.jogvMask = 0; this.jogvSlew = 0; this.liftDir = 0; this.liftTripDir = 0;
+    this.timeKnown = false; this.timeBase = 0; this.timeMs = 0; this.lastRxMs = now(); this.silenceReported = false;
+    this.rxLine = ''; this.rxOver = false; this.statusAcc = 0; this.lastTick = now(); this.choldErr = '';
+  }
+  /* --- 전송체 인터페이스 --- */
+  async open() { this.connected = true; this.lastRxMs = now(); this.silenceReported = false; this.rxLine = ''; this.rxOver = false; this.lastTick = now(); if (!this.timer) this.timer = setInterval(() => this.tick(), 20); }
+  async write(text) {
+    for (const ch of text) {
+      if (ch === '\n') {
+        const l = this.rxLine; const over = this.rxOver; this.rxLine = ''; this.rxOver = false;
+        this.lastRxMs = now(); this.silenceReported = false;
+        if (over) this.emit('ERR line too long'); else this.handle(l);
+      } else if (ch !== '\r') { if (this.rxLine.length < CFG.LINE_MAX) this.rxLine += ch; else this.rxOver = true; }
+    }
+  }
+  async close() { this.drop(); }
+  drop() { if (!this.connected) return; this.connected = false; this.stopAll(); this.rxLine = ''; this.onClose && this.onClose(); }
+  emit(line) {
+    if (!this.connected || !this.onBytes) return;
+    const s = line + '\n'; const parts = []; for (let i = 0; i < s.length; i += CFG.CHUNK) parts.push(s.slice(i, i + CFG.CHUNK));
+    setTimeout(() => { for (const p of parts) this.onBytes && this.onBytes(p); }, 0);
+  }
+  /* --- 물리 모델 --- */
+  bit(a) { return 1 << CFG.AXES.indexOf(a); }
+  phys(a) { return this.pos[a] + (this.off[a] || 0); }
+  hall() { return this.phys('yaw') <= -95; }
+  inputs() { const y = this.phys('yaw'), l = this.phys('lift'); return { estopOk: !this.forced.estop, yawPosOk: !(this.forced.yawPos || y > 50), yawNegOk: !(this.forced.yawNeg || y < -100), liftOk: !(this.forced.lift || l < -10 || l > 100) }; }
+  running(a) { return this.mv[a].target !== null; }
+  anyRunning() { return CFG.AXES.some(a => this.running(a)); }
+  moveTo(a, target, speed, kind) {
+    const m = this.mv[a]; if (Math.abs(target - this.pos[a]) < 1e-9) { m.target = null; return; }
+    m.target = target; m.speed = Math.max(speed, 1e-6); m.dir = target > this.pos[a] ? 1 : -1; m.kind = kind;
+    if (kind !== 'jogv' && kind !== 'hold') { this.jogvMask &= ~this.bit(a); }
+    if (a === 'lift') this.liftDir = m.dir;
+  }
+  stopMove(a) { this.mv[a].target = null; }
+  forceStopAll() { for (const a of CFG.AXES) this.stopMove(a); this.jogvMask = 0; }
+  stopAll() { this.homing.phase = 'IDLE'; this.homingActive = false; this.forceStopAll(); this.hold.on = false; }
+  dropTrust() { for (const a of CFG.AXES) this.homed[a] = false; this.homingActive = false; this.homing.phase = 'IDLE'; }
+  latch(bits) {
+    const fresh = bits & ~this.faults; if (!fresh) return;
+    if (fresh & FAULT_BITS.LIM_LIFT) this.liftTripDir = this.liftDir;
+    this.faults |= bits; this.dropTrust(); this.forceStopAll(); this.hold.on = false; this.emit('FAULT ' + this.faultNames());
+  }
+  faultNames() { const n = []; for (const k in FAULT_BITS) if (this.faults & FAULT_BITS[k]) n.push(k); return n.length ? n.join(',') : 'NONE'; }
+  state() { return this.faults ? 'FAULT' : this.homingActive ? 'HOMING' : CFG.AXES.every(a => this.homed[a]) ? 'READY' : 'UNHOMED'; }
+  tick() {
+    const t = now(); const dt = Math.min((t - this.lastTick) / 1000, 0.25); this.lastTick = t;
+    const inp = this.inputs(); let add = 0;
+    if (!inp.estopOk) add |= FAULT_BITS.ESTOP; if (!inp.yawPosOk) add |= FAULT_BITS['LIM_YAW+']; if (!inp.yawNegOk) add |= FAULT_BITS['LIM_YAW-']; if (!inp.liftOk) add |= FAULT_BITS.LIM_LIFT;
+    if (add & ~this.faults) this.latch(add);
+    if (this.forced.estop) this.forced.estop = false;            // 비상정지는 순간 입력으로 흉내: 래치만 남는다
+    if (!this.running('lift')) this.liftDir = 0;
+    if (this.homingActive) this.homeTick();
+    if (this.connected && (this.anyRunning() || this.homingActive) && t - this.lastRxMs > CFG.LINK_SILENCE_MS) {
+      this.stopAll(); if (!this.silenceReported) { this.silenceReported = true; this.emit('INFO link silent - stopped'); }
+    }
+    for (const a of CFG.AXES) { const b = this.bit(a); if ((this.jogvMask & b) && t - (this.jogvLast[a] || 0) > CFG.JOGV_EXPIRY_MS) { this.jogvMask &= ~b; if (this.mv[a].kind === 'jogv') this.stopMove(a); this.jogvSlew = a === 'canopy' ? 0 : this.jogvSlew; } }
+    if (this.hold.on) {
+      if (this.jogvMask & this.bit('canopy')) this.hold.target = clamp(this.hold.target + CFG.A.canopy.jog * this.jogvSlew * dt, -180, 180);
+      let joint = this.hold.target - CFG.CANOPY_YAW_SIGN * this.pos.yaw;
+      const cut = joint < -180 || joint > 180; joint = clamp(joint, -180, 180);
+      if (cut && !this.hold.atLimit) { this.hold.atLimit = true; this.emit('INFO canopy hold at limit'); } else if (!cut) this.hold.atLimit = false;
+      if (this.hold.last === null || Math.abs(joint - this.hold.last) > 0.2) { this.hold.last = joint; this.moveTo('canopy', joint, CFG.A.canopy.vmax, 'hold'); }
+    }
+    for (const a of CFG.AXES) {
+      const m = this.mv[a]; if (m.target === null) continue;
+      const step = m.speed * dt;
+      if (Math.abs(m.target - this.pos[a]) <= step) { this.pos[a] = m.target; m.target = null; this.onDone(a, m.kind); } else this.pos[a] += m.dir * step;
+    }
+    this.statusAcc += dt * 1000;
+    if (this.statusAcc >= CFG.STATUS_MS) { this.statusAcc = 0; this.emit(this.statusLine()); }
+  }
+  onDone(a, kind) {
+    if (kind === 'recover') { if (a === 'yaw') { this.forced.yawPos = false; this.forced.yawNeg = false; } if (a === 'lift') this.forced.lift = false; }
+  }
+  statusLine() {
+    const h = CFG.AXES.map(a => this.homed[a] ? '1' : '0').join(''), r = CFG.AXES.map(a => this.running(a) ? '1' : '0').join('');
+    return `S ${this.state()} ${this.faultNames()} ${f1(this.pos.yaw)} ${f1(this.pos.reach)} ${f1(this.pos.canopy)} ${f1(this.pos.lift)} ${h} ${r} ${this.homing.phase} ${this.hold.on ? 'H' + f1(this.hold.target) : '-'}`;
+  }
+  /* --- 원점(요 홀 센서) --- */
+  homeStart() {
+    this.homingActive = true; this.hold.on = false;
+    if (this.hall()) { this.homing.phase = 'BACKOFF'; this.moveTo('yaw', this.pos.yaw + 3, CFG.A.yaw.jog / 4, 'home'); }
+    else { this.homing.phase = 'SEEK_FAST'; this.moveTo('yaw', this.pos.yaw - 160, CFG.A.yaw.jog, 'home'); }
+  }
+  homeTick() {
+    const h = this.homing, mv = this.running('yaw');
+    switch (h.phase) {
+      case 'SEEK_FAST': if (this.hall()) { h.phase = 'STOP_FAST'; this.stopMove('yaw'); } else if (!mv) h.phase = 'FAILED'; break;
+      case 'STOP_FAST': if (!mv) { h.phase = 'BACKOFF'; this.moveTo('yaw', this.pos.yaw + 3, CFG.A.yaw.jog / 4, 'home'); } break;
+      case 'BACKOFF': if (!mv) { if (this.hall()) h.phase = 'FAILED'; else { h.phase = 'SEEK_SLOW'; this.moveTo('yaw', this.pos.yaw - 6, CFG.A.yaw.jog / 4, 'home'); } } break;
+      case 'SEEK_SLOW': if (this.hall()) { h.phase = 'STOP_SLOW'; this.stopMove('yaw'); } else if (!mv) h.phase = 'FAILED'; break;
+      case 'STOP_SLOW': if (!mv) { h.phase = 'DONE'; const ph = this.phys('yaw'); this.pos.yaw = -95; this.off.yaw = ph + 95; this.homed.yaw = true; this.homingActive = false; this.emit('OK yaw homed'); } break;
+    }
+    if (h.phase === 'FAILED') { this.homingActive = false; this.latch(FAULT_BITS.HOMING); }
+  }
+  /* --- 명령 (cli.cpp + main.cpp handleCommand) --- */
+  handle(line) {
+    const t = line.trim().split(/[ \t]+/).filter(Boolean); const verb = t[0], a1 = t[1], a2 = t[2];
+    if (!verb) return this.emit('ERR empty');
+    if (t.length > 3) return this.emit('ERR too many arguments');
+    const simple = ['help', 'status', 'stop', 'reset', 'hb', 'auto'];
+    if (simple.includes(verb)) { if (a1) return this.emit('ERR no arguments expected'); return this['c_' + verb](); }
+    if (['jog', 'recover', 'move', 'home', 'zero', 'jogv'].includes(verb)) {
+      if (!CFG.AXES.includes(a1)) return this.emit('ERR unknown axis (yaw|reach|canopy|lift)');
+      let v = 0;
+      if (verb === 'jogv') { v = parseFloat(a2); if (!/^[-+]?\d*\.?\d+(e[-+]?\d+)?$/i.test(a2 || '') || !isFinite(v) || v < -1 || v > 1) return this.emit('ERR speed must be -1..1'); }
+      else if (verb === 'jog' || verb === 'recover' || verb === 'move') { v = parseFloat(a2); if (!/^[-+]?\d*\.?\d+(e[-+]?\d+)?$/i.test(a2 || '') || !isFinite(v)) return this.emit('ERR value must be a finite number'); }
+      else if (a2) return this.emit('ERR no value expected');
+      return this['c_' + verb](a1, v);
+    }
+    if (verb === 'chold') {
+      if (a2) return this.emit('ERR too many arguments');
+      if (a1 === 'off') { this.hold.on = false; return this.emit('OK'); }
+      const v = parseFloat(a1); if (!/^[-+]?\d*\.?\d+$/.test(a1 || '') || v < -180 || v > 180) return this.emit('ERR heading must be -180..180');
+      if (this.choldErr) return this.emit('ERR ' + this.choldErr);                 // 시험용: chold 거부 흉내 (__mock.failChold)
+      if (this.faults) return this.emit('ERR FAULT_LATCHED'); if (this.homingActive) return this.emit('ERR BUSY');
+      if (!this.homed.yaw || !this.homed.canopy) return this.emit('ERR NOT_HOMED');
+      this.hold = { on: true, target: v, last: null, atLimit: false }; return this.emit('OK');
+    }
+    if (verb === 'time') {
+      if (a2) return this.emit('ERR too many arguments');
+      const ms = Date.parse(a1 || ''); if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(a1 || '') || isNaN(ms)) return this.emit('ERR time must be YYYY-MM-DDTHH:MM:SSZ (UTC)');
+      this.timeKnown = true; this.timeBase = ms; this.timeMs = now(); return this.emit('OK');
+    }
+    return this.emit("ERR unknown command, try 'help'");
+  }
+  c_help() { ['status | stop | reset | jog <axis> <delta> | recover <axis> <delta> | move <axis> <pos>', 'home yaw | zero <reach|canopy|lift> | time <ISO-UTC> | auto', 'jogv <axis> <-1..1> (hold, resend every 100 ms) | hb | chold <deg>|off', 'axes: yaw(deg) reach(mm) canopy(deg) lift(deg)'].forEach(l => this.emit(l)); }
+  c_status() {
+    this.emit(`state=${this.state()} faults=${this.faultNames()}`);
+    for (const a of CFG.AXES) this.emit(`  ${a.padEnd(6)} pos=${this.pos[a].toFixed(3)} ${a === 'reach' ? 'mm' : 'deg'} homed=${this.homed[a] ? 1 : 0} running=${this.running(a) ? 1 : 0}`);
+    if (!this.timeKnown) this.emit("  time=UNSET (use 'time YYYY-MM-DDTHH:MM:SSZ')");
+    else this.emit(`  time=${isoUtc(new Date(this.timeBase + (now() - this.timeMs)))} source=MANUAL`);
+    this.emit(`  homing=${this.homing.phase}`);
+  }
+  c_stop() { this.stopAll(); this.emit('OK stopping'); }
+  c_reset() {
+    const i = this.inputs();
+    if (this.anyRunning() || (this.faults & FAULT_BITS.CONFIG) || !i.estopOk || !i.yawPosOk || !i.yawNegOk || !i.liftOk) return this.emit('ERR reset refused: inputs not healthy or motion running');
+    this.faults = 0; this.liftTripDir = 0; this.emit('OK reset - all axes UNHOMED, re-home/zero required');
+  }
+  c_hb() {}
+  c_auto() { this.emit('ERR AUTO_LOCKED'); }
+  rangeOk(a, u) { const c = CFG.A[a]; return c.verified && u >= c.min && u <= c.max; }
+  c_jog(a, d) {
+    if (this.faults) return this.emit('ERR FAULT_LATCHED'); if (this.homingActive) return this.emit('ERR BUSY');
+    if (d === 0 || !this.rangeOkJog(a, this.pos[a] + d)) return this.emit('ERR OUT_OF_RANGE');
+    if (a === 'canopy') this.hold.on = false; this.moveTo(a, this.pos[a] + d, CFG.A[a].jog, 'jog'); this.emit('OK');
+  }
+  rangeOkJog(a, u) { const c = CFG.A[a]; if (!this.homed[a] || !c.verified) return true; return u >= c.min && u <= c.max; }
+  c_recover(a, d) {
+    if (!this.faults) return this.emit('ERR NOT_FAULTED');
+    const dir = d > 0 ? 1 : d < 0 ? -1 : 0; let ok = false;
+    if (dir && a === 'yaw' && !(this.faults & ~(FAULT_BITS['LIM_YAW+'] | FAULT_BITS['LIM_YAW-']))) { const p = this.faults & FAULT_BITS['LIM_YAW+'], n = this.faults & FAULT_BITS['LIM_YAW-']; ok = !(p && n) && (p ? dir < 0 : dir > 0); }
+    if (dir && a === 'lift' && !(this.faults & ~FAULT_BITS.LIM_LIFT)) ok = this.liftTripDir !== 0 && dir === -this.liftTripDir;
+    if (!ok) return this.emit('ERR RECOVERY_NOT_ALLOWED');
+    this.moveTo(a, this.pos[a] + d, CFG.A[a].jog / 4, 'recover'); this.emit('OK');
+  }
+  c_move(a, u) {
+    if (this.faults) return this.emit('ERR FAULT_LATCHED'); if (this.homingActive) return this.emit('ERR BUSY'); if (!this.homed[a]) return this.emit('ERR NOT_HOMED');
+    if (!this.rangeOk(a, u)) return this.emit('ERR OUT_OF_RANGE');
+    if (a === 'canopy') this.hold.on = false; this.moveTo(a, u, CFG.A[a].vmax, 'move'); this.emit('OK');
+  }
+  c_home(a) {
+    if (this.faults) return this.emit('ERR FAULT_LATCHED'); if (this.homingActive || this.anyRunning()) return this.emit('ERR BUSY');
+    if (!CFG.A[a].hasHome) return this.emit('ERR NO_HOME_SENSOR_USE_ZERO');
+    this.homeStart(); this.emit('OK');
+  }
+  c_zero(a) {
+    if (this.faults) return this.emit('ERR FAULT_LATCHED'); if (this.homingActive || this.anyRunning()) return this.emit('ERR BUSY');
+    if (CFG.A[a].hasHome) return this.emit('ERR HAS_HOME_SENSOR_USE_HOME');
+    if (a === 'lift') this.off.lift = this.phys('lift') - CFG.A.lift.home;
+    this.pos[a] = CFG.A[a].home; this.homed[a] = true; if (a === 'canopy') this.hold.on = false; this.emit('OK');
+  }
+  c_jogv(a, s) {
+    const b = this.bit(a);
+    if (Math.abs(s) < CFG.DEADZONE) { this.jogvMask &= ~b; if (a === 'canopy') this.jogvSlew = 0; if (this.mv[a].kind !== 'hold') this.stopMove(a); return; }
+    if (this.faults) return this.emit('ERR FAULT_LATCHED'); if (this.homingActive) return this.emit('ERR BUSY');
+    if (this.running(a) && this.mv[a].kind !== 'jogv' && this.mv[a].kind !== 'hold') return this.emit('ERR BUSY');
+    const mask = this.jogvMask | b, Y = 1, R = 2, C = 4, L = 8;
+    if (![Y, R, C, L, Y | R].includes(mask)) return this.emit('ERR BUSY');
+    if (this.hold.on && a === 'canopy') { this.jogvSlew = s; this.jogvMask |= b; this.jogvLast[a] = now(); return; }
+    const c = CFG.A[a], dir = s > 0 ? 1 : -1, speed = c.jog * Math.abs(s) * (a === 'lift' ? CFG.LIFT_JOGV_SCALE : 1);
+    if (speed * c.spu < 1) return this.emit('ERR OUT_OF_RANGE');
+    const md = this.running(a) ? this.mv[a].dir : 0;
+    if (md !== 0 && md !== dir) { this.stopMove(a); return; }
+    const cur = this.pos[a]; let target = cur + dir * speed * CFG.JOGV_WINDOW_S;
+    if (this.homed[a] && c.verified) {
+      if (cur >= c.min && cur <= c.max) { target = clamp(target, c.min, c.max); if (Math.round(target * c.spu) === Math.round(cur * c.spu)) return this.emit('ERR OUT_OF_RANGE'); }
+      else if (!(cur < c.min ? dir > 0 : dir < 0)) return this.emit('ERR OUT_OF_RANGE');
+    }
+    this.moveTo(a, target, speed, 'jogv'); this.jogvMask |= b; this.jogvLast[a] = now();
+  }
+  /* --- 시험용 API (window.__mock) --- */
+  api() {
+    const self = this;
+    return {
+      state() { return { state: self.state(), faults: self.faultNames(), pos: { ...self.pos }, homed: { ...self.homed }, running: Object.fromEntries(CFG.AXES.map(a => [a, self.running(a)])), phase: self.homing.phase, hold: { ...self.hold }, jogvMask: self.jogvMask, connected: self.connected }; },
+      ready(pose) { self.forced = { estop: false, yawPos: false, yawNeg: false, lift: false }; if (!(self.faults & FAULT_BITS.CONFIG)) self.faults = 0; if (self.faults) return self.state(); self.stopAll(); const p = Object.assign({ yaw: -12, reach: 900, canopy: 30, lift: 15 }, pose || {}); for (const a of CFG.AXES) { self.pos[a] = p[a]; self.homed[a] = true; } self.off.yaw = 0; self.off.lift = 0; self.timeKnown = true; self.timeBase = Date.now(); self.timeMs = now(); return self.state(); },
+      set(p) { for (const a in p) if (a in self.pos) { self.stopMove(a); self.pos[a] = p[a]; } },
+      inject(name) {
+        if (name === 'ESTOP') self.forced.estop = true; else if (name === 'LIM_YAW+') self.forced.yawPos = true; else if (name === 'LIM_YAW-') self.forced.yawNeg = true;
+        else if (name === 'LIM_LIFT') { if (!self.liftDir) self.liftDir = 1; self.forced.lift = true; }
+        else if (name in FAULT_BITS) self.latch(FAULT_BITS[name]);
+      },
+      release() { self.forced = { estop: false, yawPos: false, yawNeg: false, lift: false }; },
+      failChold(reason) { self.choldErr = reason || ''; },
+      reboot() { const c = self.connected; self.boot(); self.connected = c; },
+      drop() { self.drop(); },
+      cmd(line) { self.handle(line); },
+      cfg: CFG, device: self,
+    };
+  }
+}
+
+
+/* =====================================================================
+ *  앱 상태
+ * ===================================================================== */
+const App = {
+  mockMode: new URLSearchParams(location.search).get('mock') === '1', mock: null,
+  st: { conn: 'off', devName: '', state: 'OFF', faults: [], pos: { yaw: 0, reach: 0, canopy: 0, lift: 0 }, homed: [0, 0, 0, 0], run: [0, 0, 0, 0], phase: 'IDLE', hold: { on: false, deg: 0 }, holdKnown: false, lastS: 0, timeSrc: '—', firstS: true, recoverNote: '' },
+  disp: { yaw: 0, reach: 600, canopy: 0, lift: 0 }, dirty: true, hbTimer: null, log: [], logDirty: false, toastT: 0, toastMsg: '', toastTimer: null,
+  canJog() { return this.st.conn === 'on' && (this.st.state === 'UNHOMED' || this.st.state === 'READY'); },
+  heading() { return CFG.CANOPY_YAW_SIGN * this.st.pos.yaw + this.st.pos.canopy; },
+  send(line) {
+    const ok = link.send(line);
+    if (!ok && !/^(hb|jogv )/.test(line)) this.toast('연결되지 않아 보내지 못함: ' + line, true);
+    return ok;
+  },
+  addLog(dir, line) {
+    const periodic = dir === 'tx' ? /^(hb|jogv )/.test(line) : /^S /.test(line);
+    this.log.push({ t: Date.now(), dir, line, periodic });
+    if (this.log.length > 600) this.log.splice(0, this.log.length - 400);
+    this.logDirty = true;
+  },
+  toast(msg, err) {
+    const t = now();
+    if (msg === this.toastMsg && t - this.toastT < 2500) return;
+    this.toastMsg = msg; this.toastT = t;
+    const el = $('toast'); el.textContent = msg; el.classList.toggle('err', !!err); el.classList.add('show');
+    clearTimeout(this.toastTimer); this.toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  },
+  onLine(l) {
+    const st = this.st;
+    if (l.startsWith('S ')) {
+      const t = l.split(' ');
+      if (t.length < 10) return;
+      const prev = st.state;
+      st.state = t[1]; st.faults = t[2] === 'NONE' ? [] : t[2].split(',');
+      CFG.AXES.forEach((a, i) => { const v = parseFloat(t[3 + i]); if (isFinite(v)) st.pos[a] = v; });
+      st.homed = [...t[7]].map(Number); st.run = [...t[8]].map(Number); st.phase = t[9];
+      // 10번째 hold 필드: 현재 펌웨어는 'H<deg>' 또는 '-'를 보낸다. 9필드(이전 펌웨어) 줄도 받되,
+      // 그때는 고정 상태를 모르므로(holdKnown=false) 자동 chold를 하지 않는다.
+      const h = t[10]; st.holdKnown = h !== undefined;
+      if (h && h[0] === 'H') { st.hold = { on: true, deg: parseFloat(h.slice(1)) || 0 }; Chold.pending = null; Chold.failed = ''; }
+      else if (now() - Chold.okAt > 400) st.hold = { on: false, deg: st.hold.deg };   // chold OK 직후 400 ms는 그 전에 출발한 '-' 줄을 무시
+      st.lastS = now();
+      if (st.firstS) { st.firstS = false; Object.assign(this.disp, st.pos); }
+      if (st.conn !== 'on') st.conn = 'on';
+      Chold.expire();
+      if (Holds.active && !this.canJog()) Holds.release();            // FAULT·HOMING이 되면 잡고 있던 조작을 놓는다
+      if (st.state === 'READY' && prev !== 'READY') Chold.ensure();   // (a) READY로 들어올 때마다 1회
+      this.dirty = true; this.addLog('rx', l);
+      return;
+    }
+    this.addLog('rx', l);
+    if (Chold.reply(l)) { this.dirty = true; return; }
+    if (l.startsWith('ERR ')) {
+      const code = l.slice(4); const ko = ERR_KO[code];
+      if (code === 'RECOVERY_NOT_ALLOWED') st.recoverNote = '멈춘 상태에서 걸렸거나 방향이 맞지 않습니다. 끝을 눈으로 확인하고 손으로 푼 뒤 해제(reset)하세요.';
+      this.toast((ko ? ko + ' · ' : '') + l, true);
+    } else if (l.startsWith('FAULT ')) { st.faults = l.slice(6).split(','); st.state = 'FAULT'; this.toast('고장: ' + l.slice(6), true); }
+    else if (l.startsWith('INFO ')) this.toast(l.slice(5));
+    else if (l === 'OK yaw homed') this.toast('요 원점 완료 (−95°)');
+    else if (l.startsWith('OK reset')) { this.toast('고장 해제됨 — 모든 축 원점을 다시 잡으세요'); st.recoverNote = ''; }
+    else if (/^\s*time=/.test(l)) { const m = l.match(/time=(\S+)(?:\s+source=(\S+))?/); st.timeSrc = m[1] === 'UNSET' ? 'UNSET' : (m[2] || 'MANUAL') + ' ' + m[1]; }
+    this.dirty = true;
+  },
+};
+
+/* ---------- 캐노피 절대 고정(chold) 유지 — 캐노피는 항상 절대좌표에 고정한다 (소유자 요구) ----------
+ * state=READY이고 상태줄 hold 필드가 '-'이면 chold <현재 절대 방향>을 보낸다:
+ *   (a) READY로 들어올 때마다 1회, (b) 패드·다이얼을 만질 때 첫 jogv 앞에(터치당 최대 1회).
+ * 앞선 chold의 응답을 기다리는 동안에는 다시 보내지 않는다. ERR이면 이유를 보여 주고 다음 터치까지 재시도하지 않는다.
+ * 응답 판정: chold를 보낸 뒤 처음 오는 'OK' 또는 ERR(jogv만 낼 수 있는 이유는 제외). 기기가 줄 순서대로 답한다는 전제다. */
+const Chold = {
+  pending: null, failed: '', okAt: -1e9,
+  ensure() {
+    const st = App.st;
+    if (st.conn !== 'on' || st.state !== 'READY' || !st.holdKnown || st.hold.on || this.pending) return false;
+    const deg = f1(clamp(App.heading(), -180, 180));
+    if (!App.send('chold ' + deg)) return false;
+    this.pending = { deg: parseFloat(deg), t: now() }; App.dirty = true;
+    return true;
+  },
+  touch() { this.failed = ''; this.ensure(); },
+  reply(l) {
+    const p = this.pending; if (!p) return false;
+    if (l === 'OK') { this.pending = null; this.failed = ''; this.okAt = now(); App.st.hold = { on: true, deg: p.deg }; return true; }
+    if (!l.startsWith('ERR ') || JOGV_ONLY_ERR.includes(l.slice(4))) return false;
+    this.pending = null; this.failed = l.slice(4);
+    App.toast('캐노피 절대 고정 실패: ' + (ERR_KO[this.failed] || this.failed) + ' · ' + l, true);
+    return true;
+  },
+  expire() { if (this.pending && now() - this.pending.t > 1500) { this.pending = null; this.failed = '응답 없음'; App.toast('캐노피 절대 고정(chold) 응답 없음', true); } },
+  clear() { this.pending = null; this.failed = ''; this.okAt = -1e9; },
+};
+
+/* ---------- 좌표 (세로 화면에서는 #app 전체가 90° 회전해 있다) ---------- */
+const Geo = {
+  rotated() { return matchMedia('(orientation: portrait)').matches; },
+  local(el, ev) { const r = el.getBoundingClientRect(); return this.rotated() ? { x: ev.clientY - r.top, y: r.right - ev.clientX } : { x: ev.clientX - r.left, y: ev.clientY - r.top }; },
+  size(el) { const r = el.getBoundingClientRect(); return this.rotated() ? { w: r.height, h: r.width } : { w: r.width, h: r.height }; },
+};
+
+/* =====================================================================
+ *  홀드 엔진: 한 번에 하나만. 잡는 순간 1회 + 100 ms마다 tick(), 떼면 release().
+ * ===================================================================== */
+const Holds = {
+  active: null,
+  engage(ctl) { if (this.active) return false; this.active = ctl; ctl.timer = setInterval(() => ctl.tick(), CFG.TICK_MS); ctl.tick(); UI.update(); return true; },
+  release() { const c = this.active; if (!c) return; clearInterval(c.timer); this.active = null; c.release(); UI.update(); },
+};
+function capture(el, ev) { try { el.setPointerCapture(ev.pointerId); } catch (e) { /* 합성 이벤트 */ } }
+
+/* ---------- ① 위치 패드 ---------- */
+const pad = {
+  ptr: null, origin: null, cur: null, s: { sy: 0, sr: 0, vx: 0, vy: 0 },
+  down(ev) {
+    if (ev.button > 0 || !App.canJog() || Holds.active) return;
+    ev.preventDefault(); const p = Geo.local(ev.currentTarget, ev); this.ptr = ev.pointerId; this.origin = p; this.cur = p; capture(ev.currentTarget, ev);
+    Chold.touch(); Holds.engage(this); App.dirty = true;
+  },
+  move(ev) { if (ev.pointerId !== this.ptr) return; this.cur = Geo.local(ev.currentTarget, ev); this.s = this.compute(); App.dirty = true; },
+  up(ev) { if (ev.pointerId === this.ptr) Holds.release(); },
+  compute() {
+    const dx = this.cur.x - this.origin.x, dy = -(this.cur.y - this.origin.y), L = Math.hypot(dx, dy), k = L > CFG.PAD_R ? CFG.PAD_R / L : 1;
+    const vx = dx * k, vy = dy * k, th = App.st.pos.yaw * D2R, r = clamp(App.st.pos.reach, CFG.A.reach.min, CFG.A.reach.max);
+    let sr = (vx * Math.sin(th) + vy * Math.cos(th)) / CFG.PAD_R;
+    let sy = (vx * Math.cos(th) - vy * Math.sin(th)) / CFG.PAD_R * (CFG.A.reach.jog / (r * CFG.A.yaw.jog * D2R));
+    sr = clamp(sr, -1, 1); sy = clamp(sy, -1, 1);
+    if (Math.abs(sr) < CFG.DEADZONE) sr = 0; if (Math.abs(sy) < CFG.DEADZONE) sy = 0;
+    return { sy, sr, vx, vy };
+  },
+  tick() { this.s = this.compute(); App.send('jogv yaw ' + fS(this.s.sy)); App.send('jogv reach ' + fS(this.s.sr)); App.dirty = true; },
+  release() { this.ptr = null; this.origin = null; this.s = { sy: 0, sr: 0, vx: 0, vy: 0 }; App.send('jogv yaw 0'); App.send('jogv reach 0'); App.dirty = true; },
+};
+
+/* ---------- ② 캐노피 다이얼 ---------- */
+const dial = {
+  ptr: null, lastAng: 0, acc: 0, tickT: 0, s: 0,
+  angle(ev) { const p = Geo.local(ev.currentTarget, ev), sz = Geo.size(ev.currentTarget); return Math.atan2(p.x - sz.w / 2, -(p.y - sz.h / 2)) / D2R; },
+  down(ev) {
+    if (ev.button > 0 || !App.canJog() || Holds.active) return;
+    ev.preventDefault(); this.ptr = ev.pointerId; this.lastAng = this.angle(ev); this.acc = 0; this.tickT = now(); this.s = 0; capture(ev.currentTarget, ev);
+    Chold.touch(); $('dialSvg').classList.add('held'); Holds.engage(this);
+  },
+  move(ev) { if (ev.pointerId !== this.ptr) return; const a = this.angle(ev); let d = a - this.lastAng; d = ((d + 540) % 360) - 180; this.acc += d; this.lastAng = a; },
+  up(ev) { if (ev.pointerId === this.ptr) Holds.release(); },
+  tick() {
+    const t = now(), dt = Math.max((t - this.tickT) / 1000, 0.05); let s = clamp((this.acc / dt) / CFG.DIAL_FULL_DPS, -1, 1);
+    this.acc = 0; this.tickT = t; if (Math.abs(s) < CFG.DEADZONE) s = 0; this.s = s;
+    App.send('jogv canopy ' + fS(s)); App.dirty = true;
+  },
+  release() { this.ptr = null; this.s = 0; $('dialSvg').classList.remove('held'); App.send('jogv canopy 0'); App.dirty = true; },
+};
+
+/* ---------- ③ 접기 버튼과 마법사의 축별 홀드 버튼 ---------- */
+function bindHold(el) {
+  const axis = el.dataset.axis, s = el.dataset.s;
+  const ctl = { ptr: null, el, tick() { App.send(`jogv ${axis} ${s}`); }, release() { el.classList.remove('held'); ctl.ptr = null; App.send(`jogv ${axis} 0`); } };
+  el.addEventListener('pointerdown', ev => { if (ev.button > 0 || el.disabled || Holds.active) return; ev.preventDefault(); ctl.ptr = ev.pointerId; capture(el, ev); el.classList.add('held'); Holds.engage(ctl); });
+  el.addEventListener('pointermove', ev => { if (ev.pointerId !== ctl.ptr) return; const r = el.getBoundingClientRect(); if (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom) Holds.release(); });
+  ['pointerup', 'pointercancel'].forEach(t => el.addEventListener(t, ev => { if (ev.pointerId === ctl.ptr) Holds.release(); }));
+}
+
+/* ---------- STOP ---------- */
+let stopTimer = null;
+function doStop() {
+  const ok = App.send('stop'); Holds.release();
+  const b = $('stop'); b.classList.add('sent'); $('stopSub').textContent = ok ? '정지 보냄' : '연결 안 됨';
+  clearTimeout(stopTimer); stopTimer = setTimeout(() => { b.classList.remove('sent'); $('stopSub').textContent = '항상 누를 수 있음'; }, 900);
+}
+
+/* =====================================================================
+ *  렌더링: 지도, 다이얼, 헤더. 10 Hz 보고값을 프레임마다 부드럽게 따라간다.
+ * ===================================================================== */
+const CAN = { w: 520, h: 300 };                       // 지도에 그리는 캐노피 크기(mm)
+const MapR = {
+  w: 0, h: 0, k: 0.1, px: 0, py: 0, els: {},
+  P(r, th) { return [this.px + r * this.k * Math.sin(th * D2R), this.py - r * this.k * Math.cos(th * D2R)]; },
+  resize(w, h) {
+    if (w < 40 || h < 40) return;
+    this.w = w; this.h = h; $('mapSvg').setAttribute('viewBox', `0 0 ${w} ${h}`);
+    const padT = 26, padB = 8, padL = 12, padR = 12, foot = 30, mmL = 1840 + 300, mmR = 1324 + 300, mmT = 1840 + 300;
+    const aw = w - padL - padR, ah = h - padT - padB - foot;
+    this.k = Math.min(aw / (mmL + mmR), ah / mmT);
+    this.fs = clamp(Math.round(10 * this.k / 0.127), 10, 15); this.sw = clamp(5 * this.k / 0.127, 5, 8);   // 글자·팔 굵기는 지도 배율에 비례
+    this.px = padL + mmL * this.k + (aw - (mmL + mmR) * this.k) / 2;
+    this.py = padT + mmT * this.k + (ah - mmT * this.k) / 2;
+    this.buildStatic(); this.buildDyn(); App.dirty = true;
+  },
+  arc(r, a0, a1, sweep) { const [x0, y0] = this.P(r, a0), [x1, y1] = this.P(r, a1), R = r * this.k; return `M${x0} ${y0}A${R} ${R} 0 0 ${sweep} ${x1} ${y1}`; },
+  buildStatic() {
+    const g = $('mapStatic'); g.innerHTML = ''; const { min, max } = CFG.A.yaw, rI = CFG.A.reach.min, rO = CFG.A.reach.max;
+    const [ax, ay] = this.P(rI, min), [bx, by] = this.P(rO, min), [cx, cy] = this.P(rO, max), [dx, dy] = this.P(rI, max), RO = rO * this.k, RI = rI * this.k;
+    svg('path', { d: `M${ax} ${ay}L${bx} ${by}A${RO} ${RO} 0 0 1 ${cx} ${cy}L${dx} ${dy}A${RI} ${RI} 0 0 0 ${ax} ${ay}Z`, fill: 'url(#gFan)', stroke: 'none' }, g);
+    for (const r of [1000, 1400]) svg('path', { d: this.arc(r, min, max, 1), fill: 'none', stroke: 'var(--c-map-line)', 'stroke-dasharray': '2 5', opacity: .7 }, g);
+    const [tx, ty] = this.P(rO, 0);
+    svg('line', { x1: this.px, y1: this.py, x2: tx, y2: ty, stroke: 'var(--c-map-line)', 'stroke-dasharray': '3 4' }, g);
+    this.els.lim = {
+      outer: svg('path', { d: this.arc(rO, min, max, 1), fill: 'none', stroke: 'var(--c-map-line)', 'stroke-width': 1.5 }, g),
+      inner: svg('path', { d: this.arc(rI, min, max, 1), fill: 'none', stroke: 'var(--c-map-line)', 'stroke-width': 1.5 }, g),
+      neg: svg('line', { x1: ax, y1: ay, x2: bx, y2: by, stroke: 'var(--c-map-line)', 'stroke-width': 1.5 }, g),
+      pos: svg('line', { x1: dx, y1: dy, x2: cx, y2: cy, stroke: 'var(--c-map-line)', 'stroke-width': 1.5 }, g),
+    };
+    const lab = (t, x, y, anchor) => { const e = svg('text', { x, y, 'font-size': this.fs, fill: 'var(--c-mute-2)', 'text-anchor': anchor || 'start' }, g); e.textContent = t; return e; };
+    const [lx, ly] = this.P(rO + 60, min); lab('−89°', lx, ly + 4, 'end');
+    const [rx, ry] = this.P(rO + 60, max); lab('+46°', rx, ry);
+    lab('0°', tx, ty - 6, 'middle');
+    const [ix, iy] = this.P(rI, (min + max) / 2 - 30); lab('600 mm', ix - 4, iy - 4, 'end');
+    const [ox, oy] = this.P(rO, (min + max) / 2 - 40); lab('1840 mm', ox - 6, oy, 'end');
+    svg('circle', { cx: this.px, cy: this.py, r: this.sw * 1.8, fill: 'var(--c-steel-2)', stroke: 'var(--c-steel-3)', 'stroke-width': 2 }, g);
+    lab('기둥', this.px + this.sw * 2.8, this.py + this.fs * 1.6);
+  },
+  buildDyn() {
+    const g = $('mapDyn'); g.innerHTML = ''; const e = this.els;
+    e.hint = svg('circle', { r: 30, fill: 'var(--a-sky-12)', stroke: 'var(--c-sky-2)', 'stroke-width': 1.2, 'stroke-dasharray': '4 4', opacity: .6 }, g);
+    e.arm = svg('line', { x1: this.px, y1: this.py, stroke: 'var(--c-steel)', 'stroke-width': this.sw, 'stroke-linecap': 'round' }, g);
+    e.canG = svg('g', {}, g);
+    svg('rect', { x: -CAN.w * this.k / 2, y: -CAN.h * this.k / 2, width: CAN.w * this.k, height: CAN.h * this.k, rx: 8, fill: 'var(--c-sky)', 'fill-opacity': .9, stroke: 'var(--c-sky-3)', 'stroke-width': 1.5 }, e.canG);
+    svg('line', { x1: -CAN.w * this.k / 4, y1: -CAN.h * this.k / 2 + 4, x2: CAN.w * this.k / 4, y2: -CAN.h * this.k / 2 + 4, stroke: 'var(--c-sky-4)', 'stroke-width': 2, 'stroke-linecap': 'round' }, e.canG);
+    svg('circle', { r: 3.5, fill: 'var(--c-sky-4)' }, e.canG);
+    const kn = $('mapKnob'); kn.innerHTML = '';
+    e.base = svg('circle', { r: CFG.PAD_R, fill: 'var(--a-sky-12)', stroke: 'var(--c-sky-2)', 'stroke-width': 1.5, 'stroke-dasharray': '5 4' }, kn);
+    e.arrow = svg('line', { stroke: 'var(--c-sky-2)', 'stroke-width': 2.5, 'marker-end': 'url(#mArrow)' }, kn);
+    e.knobGlow = svg('circle', { r: 16, fill: 'var(--c-sky-2)', opacity: .5, filter: 'url(#fGlow)' }, kn);
+    e.knob = svg('circle', { r: 13, fill: 'url(#gKnob)', stroke: 'var(--c-sky-2)', 'stroke-width': 2 }, kn);
+  },
+  draw() {
+    const e = this.els; if (!e.arm) return;
+    const st = App.st, d = App.disp, r = clamp(d.reach, CFG.A.reach.min, CFG.A.reach.max), [tx, ty] = this.P(r, d.yaw);
+    e.arm.setAttribute('x2', tx); e.arm.setAttribute('y2', ty);
+    e.canG.setAttribute('transform', `translate(${tx} ${ty}) rotate(${CFG.CANOPY_YAW_SIGN * d.yaw + d.canopy})`);
+    const active = Holds.active === pad;
+    e.hint.setAttribute('cx', tx); e.hint.setAttribute('cy', ty); e.hint.style.display = App.canJog() && !active ? '' : 'none';
+    const atMin = st.homed[0] && st.pos.yaw <= CFG.A.yaw.min + 0.05, atMax = st.homed[0] && st.pos.yaw >= CFG.A.yaw.max - 0.05;
+    const rMin = st.homed[1] && st.pos.reach <= CFG.A.reach.min + 0.05, rMax = st.homed[1] && st.pos.reach >= CFG.A.reach.max - 0.05;
+    const lim = (el, on) => el.setAttribute('stroke', on ? 'var(--c-amber)' : 'var(--c-map-line)');
+    lim(e.lim.neg, atMin); lim(e.lim.pos, atMax); lim(e.lim.inner, rMin); lim(e.lim.outer, rMax);
+    $('mapKnob').style.display = active ? '' : 'none';
+    if (active && pad.origin) {
+      const o = pad.origin, s = pad.s; e.base.setAttribute('cx', o.x); e.base.setAttribute('cy', o.y);
+      e.knob.setAttribute('cx', o.x + s.vx); e.knob.setAttribute('cy', o.y - s.vy); e.knobGlow.setAttribute('cx', o.x + s.vx); e.knobGlow.setAttribute('cy', o.y - s.vy);
+      const L = Math.hypot(s.vx, s.vy), show = L > 6;
+      e.arrow.style.display = show ? '' : 'none';
+      if (show) { e.arrow.setAttribute('x1', tx); e.arrow.setAttribute('y1', ty); e.arrow.setAttribute('x2', tx + s.vx * 1.2); e.arrow.setAttribute('y2', ty - s.vy * 1.2); }
+    }
+    $('mapReadout').classList.toggle('show', active);
+    if (active) {
+      const bar = (id, v) => { const b = $(id); b.style.width = Math.abs(v) * 50 + '%'; b.classList.toggle('neg', v < 0); };
+      bar('barYaw', pad.s.sy); bar('barReach', pad.s.sr); $('valYaw').textContent = (pad.s.sy > 0 ? '+' : '') + fS(pad.s.sy); $('valReach').textContent = (pad.s.sr > 0 ? '+' : '') + fS(pad.s.sr);
+    }
+  },
+};
+
+const DialR = {
+  C: 100, R: 72, els: {},
+  pt(r, a) { return [this.C + r * Math.sin(a * D2R), this.C - r * Math.cos(a * D2R)]; },
+  build() {
+    const g = $('dialStatic'); g.innerHTML = ''; const C = this.C, R = this.R;
+    svg('circle', { cx: C, cy: C, r: R, fill: 'var(--c-panel-2)', stroke: 'var(--c-line-2)', 'stroke-width': 12 }, g);
+    for (let a = 0; a < 360; a += 30) { const maj = a % 90 === 0, [x1, y1] = this.pt(R - 10, a), [x2, y2] = this.pt(R - (maj ? 18 : 15), a); svg('line', { x1, y1, x2, y2, stroke: maj ? 'var(--c-mute)' : 'var(--c-line-2)', 'stroke-width': maj ? 2 : 1.2 }, g); }
+    for (const [t, a] of [['0°', 0], ['+90°', 90], ['±180°', 180], ['−90°', -90]]) { const [x, y] = this.pt(R + 18, a); const e = svg('text', { x, y: y + 3.5, 'font-size': 10, fill: 'var(--c-mute)', 'text-anchor': 'middle' }, g); e.textContent = t; }
+    const d = $('dialDyn'); d.innerHTML = ''; const e = this.els;
+    e.arc = svg('path', { fill: 'none', stroke: 'var(--c-amber)', 'stroke-width': 12, 'stroke-linecap': 'round' }, d);
+    e.ghost = svg('line', { stroke: 'var(--c-sky-3)', 'stroke-width': 2, 'stroke-linecap': 'round', opacity: .9 }, d);
+    e.canG = svg('g', {}, d);
+    svg('rect', { x: -26, y: -16, width: 52, height: 32, rx: 8, fill: 'var(--c-sky)', 'fill-opacity': .85, stroke: 'var(--c-sky-3)', 'stroke-width': 1.2 }, e.canG);
+    svg('line', { x1: -12, y1: -12, x2: 12, y2: -12, stroke: 'var(--c-sky-4)', 'stroke-width': 2, 'stroke-linecap': 'round' }, e.canG);
+    e.needle = svg('g', { id: 'needle', 'data-angle': '0.0' }, d);
+    svg('line', { x1: C, y1: C, x2: C, y2: C - (R - 4), stroke: 'var(--c-text)', 'stroke-width': 3, 'stroke-linecap': 'round' }, e.needle);
+    svg('circle', { cx: C, cy: C - (R - 4), r: 7, fill: 'var(--c-text)', stroke: 'var(--c-amber)', 'stroke-width': 2 }, e.needle);
+    svg('circle', { cx: C, cy: C, r: 4, fill: 'var(--c-text)' }, d);
+    e.spin = svg('text', { x: C, y: C + 54, 'font-size': 14, fill: 'var(--c-amber)', 'text-anchor': 'middle', 'font-weight': 700 }, d);
+  },
+  draw() {
+    const e = this.els; if (!e.needle) return; const st = App.st, d = App.disp;
+    const measured = CFG.CANOPY_YAW_SIGN * d.yaw + d.canopy, h = st.hold.on ? st.hold.deg : measured;
+    const [x, y] = this.pt(this.R, h); e.arc.setAttribute('d', Math.abs(h) < 0.5 ? '' : `M${this.C} ${this.C - this.R}A${this.R} ${this.R} 0 ${Math.abs(h) > 180 ? 1 : 0} ${h > 0 ? 1 : 0} ${x} ${y}`);
+    e.needle.setAttribute('transform', `rotate(${h} ${this.C} ${this.C})`); e.needle.dataset.angle = f1(h);
+    e.canG.setAttribute('transform', `translate(${this.C} ${this.C}) rotate(${h})`);
+    e.ghost.style.display = st.hold.on ? '' : 'none';
+    if (st.hold.on) { const [gx, gy] = this.pt(this.R - 20, measured), [hx, hy] = this.pt(this.R + 2, measured); e.ghost.setAttribute('x1', gx); e.ghost.setAttribute('y1', gy); e.ghost.setAttribute('x2', hx); e.ghost.setAttribute('y2', hy); }
+    const sp = Holds.active === dial ? dial.s : 0; e.spin.textContent = sp > 0 ? '⟳' : sp < 0 ? '⟲' : '';
+    $('dialVal').textContent = st.conn === 'on' ? f1(h) + '°' + (st.hold.on ? ' 고정' : '') : '—';
+    const m = $('dialMode'); let mode, text;
+    if (st.conn !== 'on') { mode = 'lock'; text = '연결 안 됨'; }
+    else if (st.state === 'READY') {
+      if (st.hold.on) { mode = 'hold'; text = `절대 고정 · 관절 ${f1(st.pos.canopy)}°`; }
+      else if (!st.holdKnown) { mode = 'joint'; text = '고정 미지원 펌웨어: 관절 직접'; }
+      else if (Chold.pending) { mode = 'ready'; text = '절대 고정 거는 중…'; }
+      else if (Chold.failed) { mode = 'joint'; text = '고정 실패: ' + Chold.failed; }
+      else { mode = 'ready'; text = '고정 꺼짐 · 조작하면 다시 고정'; }
+    }
+    else if (App.canJog()) { mode = 'joint'; text = '원점 전: 관절 직접'; }
+    else { mode = 'lock'; text = st.state === 'FAULT' ? '고장 — 잠김' : '원점 잡는 중 — 잠김'; }
+    m.dataset.m = mode; m.firstElementChild.textContent = text;
+  },
+};
+
+const UI = {
+  update() {
+    const st = App.st, on = st.conn === 'on', jog = App.canJog();
+    const pill = $('statePill'); pill.dataset.s = on ? st.state : 'OFF'; pill.textContent = STATE_KO[on ? st.state : 'OFF'] || st.state;
+    const conn = $('connBtn'), stale = on && now() - st.lastS > 1500;
+    conn.dataset.c = st.conn === 'connecting' ? 'connecting' : on ? (stale ? 'stale' : 'on') : 'off';
+    $('connText').textContent = st.conn === 'connecting' ? '연결 중…' : on ? (stale ? st.devName + ' 신호 없음' : st.devName + ' 연결됨') : '기기 연결';
+    CFG.AXES.forEach((a, i) => { const c = $('chip' + a[0].toUpperCase() + a.slice(1)); c.lastElementChild.textContent = on ? f1(st.pos[a]) + CFG.A[a].unit : '—'; c.classList.toggle('run', on && !!st.run[i]); c.classList.toggle('unh', on && !st.homed[i]); });
+    $('gearBtn').classList.toggle('todo', on && st.state === 'UNHOMED');
+    $('mapSvg').classList.toggle('on', jog); $('dialSvg').classList.toggle('on', jog);
+    $('mapCard').classList.toggle('off', on && !jog); $('dialCard').classList.toggle('off', on && !jog); $('liftCard').classList.toggle('off', on && !jog);
+    document.querySelectorAll('.hold').forEach(b => { b.disabled = !jog; });
+    const badge = $('mapBadge'); const unh = on && (!st.homed[0] || !st.homed[1]);
+    badge.classList.toggle('show', on && (unh || st.state === 'HOMING')); badge.textContent = st.state === 'HOMING' ? '원점 잡는 중 · ' + st.phase : '원점 전 · 위치 추정';
+    $('liftVal').textContent = on ? f1(st.pos.lift) + '°' : '—';
+    $('connectOv').classList.toggle('show', !on);
+    $('fault').classList.toggle('show', on && st.state === 'FAULT');
+    if (on && st.state === 'FAULT') Panels.fault();
+    Panels.sheet();
+  },
+};
+let lastFrame = now();
+function frame() {
+  const t = now(), dt = Math.min((t - lastFrame) / 1000, 0.1); lastFrame = t; const st = App.st, d = App.disp;
+  let moving = false;
+  for (const a of CFG.AXES) { const diff = st.pos[a] - d[a]; if (Math.abs(diff) < 0.02) d[a] = st.pos[a]; else { d[a] += diff * Math.min(1, dt * 14); moving = true; } }
+  if (App.dirty || moving) { App.dirty = false; MapR.draw(); DialR.draw(); UI.update(); }
+  if (App.logDirty) Panels.log();
+  requestAnimationFrame(frame);
+}
+
+
+/* =====================================================================
+ *  FAULT 패널, ⚙ 세부 시트
+ * ===================================================================== */
+const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+const Panels = {
+  faultKey: '', pane: 'wiz',
+  fault() {
+    const st = App.st, key = st.faults.join(',') + '|' + st.recoverNote; if (this.faultKey === key) return; this.faultKey = key;
+    const list = $('faultList'); list.innerHTML = '';
+    for (const f of st.faults) { const li = el('li'); li.append(el('code', '', f), el('span', '', FAULT_KO[f] || '알 수 없는 고장')); list.appendChild(li); }
+    const row = $('recoverRow'); row.innerHTML = ''; let note = '';
+    const only = ok => st.faults.every(f => ok.includes(f));
+    const btn = (label, cmd) => { const b = el('button', 'btn', label); b.type = 'button'; b.addEventListener('click', () => App.send(cmd)); row.appendChild(b); };
+    const yp = st.faults.includes('LIM_YAW+'), yn = st.faults.includes('LIM_YAW-'), ll = st.faults.includes('LIM_LIFT');
+    if ((yp || yn) && only(['LIM_YAW+', 'LIM_YAW-'])) {
+      if (yp && yn) note = '요 리밋 두 개가 동시에 열렸습니다 — 배선 고장. 복구 조그가 없습니다.';
+      else if (yp) { btn('◀ 요 −1° 빼내기', 'recover yaw -1'); note = '+ 리밋에서 − 방향으로 1°씩, 조그 속도의 1/4로 움직입니다. 풀릴 때까지 반복하세요.'; }
+      else { btn('요 +1° 빼내기 ▶', 'recover yaw 1'); note = '− 리밋에서 + 방향으로 1°씩, 조그 속도의 1/4로 움직입니다. 풀릴 때까지 반복하세요.'; }
+    } else if (ll && only(['LIM_LIFT'])) {
+      btn('▲ 접기 +2°', 'recover lift 2'); btn('▼ 접기 −2°', 'recover lift -2');
+      note = '움직이던 방향의 반대만 펌웨어가 허용합니다. 멈춘 상태에서 걸렸으면 거부되니 끝을 눈으로 확인하고 손으로 푸세요.';
+    } else note = st.faults.includes('CONFIG') ? '설정 오류는 reset으로 풀리지 않습니다.' : '리밋 고장이 아니라 복구 조그가 없습니다. 원인을 확인한 뒤 해제(reset)하세요.';
+    $('recoverNote').textContent = st.recoverNote || note;
+    $('resetBtn').disabled = st.faults.includes('CONFIG');
+  },
+  buildMove() {
+    const g = $('moveGrid'); g.innerHTML = '';
+    for (const a of CFG.AXES) {
+      const c = CFG.A[a], cur = el('span', 'cur', '—'); cur.id = 'mv-cur-' + a;
+      const inp = document.createElement('input'); inp.type = 'number'; inp.step = '0.1'; inp.inputMode = 'decimal'; inp.id = 'mv-in-' + a;
+      inp.placeholder = c.verified ? `${c.min} ~ ${c.max} ${c.unit}` : '범위 미검증 — 펌웨어가 move를 거부'; inp.min = c.min; inp.max = c.max;
+      const b = el('button', 'btn btn-sm btn-primary', '이동'); b.type = 'button'; b.id = 'mv-btn-' + a;
+      b.addEventListener('click', () => { const v = parseFloat(inp.value); if (!isFinite(v)) return App.toast('숫자를 입력하세요', true); if (v < c.min || v > c.max) return App.toast(`범위는 ${c.min} ~ ${c.max} ${c.unit}`, true); App.send(`move ${a} ${Math.round(v * 10) / 10}`); });
+      g.append(el('span', 'lab', c.label), cur, inp, b);
+    }
+    g.appendChild(el('div', 'note', 'move는 READY에서만, 그 축의 최대속도로 움직입니다. 진행 중에는 STOP으로 멈춥니다. 접기(lift)는 범위가 검증되지 않아 펌웨어가 거부합니다.'));
+  },
+  sheet() {
+    if (!$('sheet').classList.contains('show')) return;
+    const st = App.st, on = st.conn === 'on', busy = !on || st.state === 'FAULT' || st.state === 'HOMING', running = st.run.some(Boolean);
+    $('sheetStatus').textContent = on ? `${st.state} · ${st.faults.join(',') || 'NONE'} · ${st.phase} · hold ${st.hold.on ? 'H' + f1(st.hold.deg) : '-'}` : '연결 안 됨';
+    $('disconnectBtn').disabled = !on;
+    const tDone = on && st.timeSrc !== 'UNSET' && st.timeSrc !== '—';
+    $('timeSrc').textContent = on ? (st.timeSrc === 'UNSET' ? '시간 없음 (UNSET)' : st.timeSrc) : '—';
+    $('homePhase').textContent = on ? (st.homed[0] ? `원점 있음 · 요 ${f1(st.pos.yaw)}° · ` : '') + st.phase : '—';
+    $('wReach').textContent = on ? f1(st.pos.reach) + ' mm' + (st.homed[1] ? ' · 기준 있음' : '') : '—';
+    $('wCanopy').textContent = on ? f1(st.pos.canopy) + '°' + (st.homed[2] ? ' · 기준 있음' : '') : '—';
+    $('wLift').textContent = on ? f1(st.pos.lift) + '°' + (st.homed[3] ? ' · 기준 있음' : '') : '—';
+    $('timeBtn').disabled = !on; $('homeBtn').disabled = busy || running;
+    $('zeroReach').disabled = busy || running; $('zeroCanopy').disabled = busy || running; $('zeroLift').disabled = busy || running;
+    const step = (id, done, cur) => { const e = $(id); e.classList.toggle('done', !!done); e.classList.toggle('cur', !!cur); };
+    const h = st.homed; step('st-time', tDone, on && !tDone); step('st-yaw', on && h[0], tDone && !h[0]); step('st-reach', on && h[1], h[0] && !h[1]); step('st-canopy', on && h[2], h[1] && !h[2]); step('st-lift', on && h[3], h[2] && !h[3]);
+    CFG.AXES.forEach((a, i) => { $('mv-cur-' + a).textContent = on ? f1(st.pos[a]) + ' ' + CFG.A[a].unit : '—'; const ok = on && st.state === 'READY' && CFG.A[a].verified && h[i]; $('mv-in-' + a).disabled = !ok; $('mv-btn-' + a).disabled = !ok; });
+    if (App.mockMode) { const m = window.__mock.state(); $('mockState').textContent = `mock: ${m.state} faults=${m.faults} phase=${m.phase} hold=${m.hold.on ? f1(m.hold.target) : 'off'} jogvMask=${m.jogvMask} ` + CFG.AXES.map(a => `${a}=${f1(m.pos[a])}${m.running[a] ? '*' : ''}`).join(' '); }
+  },
+  log() {
+    if (!$('sheet').classList.contains('show') || this.pane !== 'raw') return;
+    App.logDirty = false; const show = $('logPeriodic').checked, box = $('log'), atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 12;
+    box.innerHTML = App.log.filter(e => show || !e.periodic).slice(-250).map(e => {
+      const cls = e.dir === 'tx' ? 'tx' : /^(ERR|FAULT)/.test(e.line) ? 'err' : e.line.startsWith('INFO') ? 'info' : 'rx';
+      return `<div class="${cls}">${new Date(e.t).toISOString().slice(11, 23)} ${e.dir === 'tx' ? '›' : '‹'} ${esc(e.line)}</div>`;
+    }).join('');
+    if (atBottom) box.scrollTop = box.scrollHeight;
+  },
+  selectTab(name) {
+    this.pane = name;
+    document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.pane === name)));
+    document.querySelectorAll('.pane').forEach(p => p.classList.toggle('show', p.id === 'pane-' + name));
+    App.logDirty = true; this.sheet();
+  },
+  open(on) { $('sheet').classList.toggle('show', on); if (on) { this.sheet(); App.logDirty = true; } else Holds.release(); },
+};
+
+/* =====================================================================
+ *  연결 흐름
+ * ===================================================================== */
+function startHb() { stopHb(); App.hbTimer = setInterval(() => link.send('hb'), CFG.HB_MS); }
+function stopHb() { clearInterval(App.hbTimer); App.hbTimer = null; }
+async function connect() {
+  if (link.state !== 'off') return;
+  const st = App.st;
+  let t;
+  if (App.mockMode) t = App.mock;
+  else {
+    if (!navigator.bluetooth) return App.toast('이 브라우저는 Web Bluetooth를 지원하지 않습니다 (Android Chrome / iOS Bluefy)', true);
+    if (!isSecureContext) return App.toast('HTTPS 또는 localhost에서만 연결할 수 있습니다', true);
+    t = new BleTransport();
+  }
+  link.attach(t); link.setState('connecting');
+  try { await t.open(); } catch (e) { link.transport = null; link.setState('off'); App.toast('연결 실패: ' + (e.message || e), true); return; }
+  st.devName = t.name; st.firstS = true; st.lastS = now(); st.state = 'UNHOMED'; st.timeSrc = '—'; st.recoverNote = '';
+  link.setState('on');
+  App.send('status');
+}
+link.onLine = l => App.onLine(l);
+link.onTx = l => App.addLog('tx', l);
+link.onState = s => {
+  const st = App.st;
+  if (s === 'off') { if (st.conn === 'on') App.toast('연결이 끊겼습니다'); st.conn = 'off'; st.state = 'OFF'; st.hold = { on: false, deg: 0 }; st.holdKnown = false; Chold.clear(); Holds.release(); stopHb(); }
+  else if (s === 'on') { st.conn = 'on'; startHb(); }
+  else st.conn = s;
+  App.dirty = true; UI.update();
+};
+
+/* =====================================================================
+ *  이벤트 연결, 초기화
+ * ===================================================================== */
+function init() {
+  const st = App.st;
+  DialR.build(); Panels.buildMove();
+  const map = $('mapSvg'); map.addEventListener('pointerdown', e => pad.down(e)); map.addEventListener('pointermove', e => pad.move(e)); map.addEventListener('pointerup', e => pad.up(e)); map.addEventListener('pointercancel', e => pad.up(e));
+  const dl = $('dialSvg'); dl.addEventListener('pointerdown', e => dial.down(e)); dl.addEventListener('pointermove', e => dial.move(e)); dl.addEventListener('pointerup', e => dial.up(e)); dl.addEventListener('pointercancel', e => dial.up(e));
+  document.querySelectorAll('.hold').forEach(bindHold);
+  const stopBtn = $('stop'); stopBtn.addEventListener('pointerdown', e => { e.preventDefault(); doStop(); }); stopBtn.addEventListener('keydown', e => { if (e.key === 'Enter') doStop(); });
+  document.addEventListener('keydown', e => { if (e.target.closest('input,select,textarea') && e.key !== 'Escape') return; if (e.key === ' ' || e.key === 'Escape') { e.preventDefault(); doStop(); } });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) Holds.release(); });
+  window.addEventListener('blur', () => Holds.release());
+  $('app').addEventListener('contextmenu', e => e.preventDefault());
+  $('rotateHintClose').addEventListener('click', () => document.body.classList.remove('hint'));
+  $('gearBtn').addEventListener('click', () => Panels.open(true)); $('sheetClose').addEventListener('click', () => Panels.open(false));
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => Panels.selectTab(t.dataset.pane)));
+  $('disconnectBtn').addEventListener('click', () => link.close());
+  $('connBtn').addEventListener('click', () => { if (st.conn === 'on') Panels.open(true); else connect(); });
+  $('connectBig').addEventListener('click', () => connect());
+  $('resetBtn').addEventListener('click', () => App.send('reset'));
+  $('timeBtn').addEventListener('click', () => { App.send('time ' + isoUtc()); setTimeout(() => App.send('status'), 300); });
+  $('homeBtn').addEventListener('click', () => App.send('home yaw'));
+  $('zeroReach').addEventListener('click', () => App.send('zero reach')); $('zeroCanopy').addEventListener('click', () => App.send('zero canopy')); $('zeroLift').addEventListener('click', () => App.send('zero lift'));
+  const rawSend = () => { const v = $('rawIn').value.trim(); if (!v) return; if (App.send(v)) $('rawIn').value = ''; };
+  $('rawSend').addEventListener('click', rawSend); $('rawIn').addEventListener('keydown', e => { if (e.key === 'Enter') rawSend(); });
+  document.querySelectorAll('[data-cmd]').forEach(b => b.addEventListener('click', () => App.send(b.dataset.cmd)));
+  $('logPeriodic').addEventListener('change', () => { App.logDirty = true; }); $('logClear').addEventListener('click', () => { App.log.length = 0; App.logDirty = true; });
+  const ro = new ResizeObserver(en => { for (const e of en) MapR.resize(e.contentRect.width, e.contentRect.height); }); ro.observe($('mapCard'));
+
+  if (App.mockMode) {
+    App.mock = new MockDevice(); window.__mock = App.mock.api();
+    $('mockBadge').hidden = false; $('mockTab').hidden = false; $('connectMsg').textContent = '모의 기기에 연결합니다.';
+    const row = $('mockFaults'); for (const f in FAULT_BITS) { const b = el('button', 'btn btn-sm btn-danger', f); b.type = 'button'; b.addEventListener('click', () => window.__mock.inject(f)); row.appendChild(b); }
+    $('mockReady').addEventListener('click', () => { window.__mock.ready(); App.toast('mock: 모든 축 원점 있음 → READY'); });
+    $('mockReboot').addEventListener('click', () => { window.__mock.reboot(); App.toast('mock: 재부팅 (UNHOMED)'); });
+    $('mockDrop').addEventListener('click', () => window.__mock.drop()); $('mockRelease').addEventListener('click', () => window.__mock.release());
+    connect();
+  } else if (!navigator.bluetooth || !isSecureContext) {
+    $('connectMsg').textContent = !navigator.bluetooth ? '이 브라우저는 Web Bluetooth를 지원하지 않습니다.' : 'HTTPS 또는 localhost에서만 Web Bluetooth가 동작합니다.';
+    $('connectSub').innerHTML = 'Android Chrome 또는 iOS Bluefy에서 여세요. 기기 없이 화면만 보려면 <a href="?mock=1">모의 모드</a>로 엽니다.';
+    $('connectBig').disabled = true;
+  } else $('connectSub').textContent = '블루투스 선택창에서 AvoidSun을 고르세요. 비상시에는 전원 스위치를 끄세요 — 앱의 STOP은 감속 정지입니다.';
+  window.__app = { send: l => App.send(l), stop: doStop, connect, state: () => ({ ...st, pos: { ...st.pos }, holdActive: Holds.active ? (Holds.active === pad ? 'pad' : Holds.active === dial ? 'dial' : 'button') : null, needle: $('needle') ? $('needle').dataset.angle : null, choldPending: !!Chold.pending, choldFailed: Chold.failed }), log: App.log };
+  UI.update(); requestAnimationFrame(frame);
+}
+init();
+})();
+</script>
+</body>
+</html>
